@@ -4,6 +4,18 @@
   'use strict';
   const COLLS = ['users', 'vendors', 'drivers', 'bases', 'routes', 'reqs', 'notifs', 'audit'];
   const HWS = ['admin', 'manager', 'hws'], LEAD = ['admin', 'manager'];
+  // Role permissions the Administrator can tick or untick. Defaults: [admin, manager, hws, vendor, driver, user].
+  const ROLES = ['admin', 'manager', 'hws', 'vendor', 'driver', 'user'];
+  const PERM_DEFAULTS = {
+    dash: [1, 1, 1, 0, 0, 0], cost: [1, 1, 1, 0, 0, 0], vendorDash: [1, 1, 1, 1, 0, 0], sla: [1, 1, 1, 0, 0, 0], proofs: [1, 1, 1, 0, 0, 0], reports: [1, 1, 1, 0, 0, 0],
+    create: [1, 1, 1, 0, 0, 1], validate: [1, 1, 1, 0, 0, 0], assign: [0, 0, 0, 1, 0, 0], collect: [0, 0, 0, 0, 1, 0], accept: [0, 0, 0, 0, 0, 1], vconfirm: [0, 0, 0, 1, 0, 0],
+    close: [1, 1, 1, 0, 0, 0], verify: [1, 1, 1, 0, 0, 0], escalate: [1, 1, 0, 0, 0, 0],
+    users: [1, 1, 1, 0, 0, 0], bases: [1, 1, 1, 0, 0, 0], vendors: [1, 1, 1, 0, 0, 0], rates: [1, 1, 0, 0, 0, 0], deactivate: [1, 1, 0, 0, 0, 0], delete: [1, 0, 0, 0, 0, 0],
+    undo: [1, 0, 0, 0, 0, 0], notif: [1, 1, 1, 0, 0, 0], audit: [1, 1, 1, 0, 0, 0]
+  };
+  const defaultPerms = () => { const p = {}; Object.keys(PERM_DEFAULTS).forEach(k => { p[k] = {}; ROLES.forEach((r, i) => p[k][r] = !!PERM_DEFAULTS[k][i]) }); return p };
+  function permsOf(st) { const p = defaultPerms(), sp = (st && st.perms) || {}; Object.keys(p).forEach(k => ROLES.forEach(r => { if (sp[k] && typeof sp[k][r] === 'boolean') p[k][r] = sp[k][r] })); return p }
+  const canW = (w, u, k) => !!permsOf(w.meta('settings', {}))[k][u.role];
   const ROLE = { admin: 'Administrator', manager: 'HWS Manager', hws: 'HWS Staff', vendor: 'Vendor Admin', driver: 'Driver', user: 'Regional User' };
   const NAME = 'hwotg-offline', SKEY = 'hwotg.offline.session', SESSION_DAYS = 14;
   const bc = 'BroadcastChannel' in window ? new BroadcastChannel(NAME) : null;
@@ -135,17 +147,18 @@
   const pub = x => { const y = Object.assign({}, x); delete y.pw; return y };
   function snapshot(w, u) {
     const reqs = w.all('reqs').filter(r => inScope(u, r)), ids = new Set(reqs.map(r => r.id));
-    const users = isHWS(u) ? w.all('users')
+    const users = isHWS(u) || canW(w, u, 'users') ? w.all('users')
       : [w.get('users', u.id)].concat(u.role === 'user' ? w.all('users').filter(x => isHWS(x) && x.active).map(x => ({ id: x.id, username: '', name: x.name, role: x.role, active: true })) : []);
     let drivers = w.all('drivers');
     if (u.role === 'vendor') drivers = drivers.filter(d => d.vendor === u.vendor);
     else if (u.role === 'driver') drivers = drivers.filter(d => d.id === u.driver || reqs.some(r => r.driver === d.id));
     else if (u.role === 'user') drivers = drivers.filter(d => reqs.some(r => r.driver === d.id));
-    return Object.assign({ v: 3, version: w.meta('version', 1), seq: w.meta('seq', 1000) }, w.meta('settings', {}), {
+    const st = w.meta('settings', {});
+    return Object.assign({ v: 3, version: w.meta('version', 1), seq: w.meta('seq', 1000) }, st, { perms: permsOf(st), permDefaults: defaultPerms() }, {
       users: users.map(pub), vendors: w.all('vendors'), drivers, bases: w.all('bases'),
-      routes: isHWS(u) ? w.all('routes') : [], reqs: reqs.sort((a, b) => b.t.created - a.t.created),
+      routes: isHWS(u) || canW(w, u, 'cost') || canW(w, u, 'rates') ? w.all('routes') : [], reqs: reqs.sort((a, b) => b.t.created - a.t.created),
       notifs: w.all('notifs').filter(n => ids.has(n.rid)).sort((a, b) => b.ts - a.ts).slice(0, 300),
-      audit: isHWS(u) ? w.all('audit') : []
+      audit: canW(w, u, 'audit') ? w.all('audit') : []
     })
   }
   const audit = (w, u, action, remarks) => w.put('audit', { id: 'a' + rid(), ts: Date.now(), user: u.name, role: ROLE[u.role] || '', action, no: '', remarks: remarks || '' });
@@ -159,13 +172,17 @@
         if (!x || x.id == null) continue;
         const old = w.get(c, x.id);
         if (c === 'reqs') {
-          if (!isHWS(u) && (old ? !inScope(u, old) : !(u.role === 'user' && x.requestor === u.id))) throw new Denied('That request is outside your access.');
+          if (!isHWS(u) && (old ? !inScope(u, old) : !(canW(w, u, 'create') && x.requestor === u.id))) throw new Denied('That request is outside your access.');
           if (!old && (typeof x.id !== 'number' || x.id > w.meta('seq', 1000))) throw new Denied('Request number was not issued.');
           w.put(c, x)
         } else if (c === 'notifs') w.put(c, x);
         else if (c === 'audit') { if (!old) w.put(c, Object.assign(x, { user: u.name })) }
         else if (c === 'users') {
-          if (!isHWS(u)) throw new Denied('Only HWS can change user accounts.');
+          const onlyActive = old && Object.keys(Object.assign({}, old, x)).every(k => k === 'active' || k === 'pw' || JSON.stringify(old[k]) === JSON.stringify(x[k]));
+          const vendorLogin = !old && ['vendor', 'driver'].includes(x.role) && canW(w, u, 'vendors');
+          if (!(canW(w, u, 'users') || vendorLogin || (onlyActive && canW(w, u, 'deactivate')))) throw new Denied('Your role cannot change user accounts.');
+          if (old && onlyActive && old.active !== x.active && !canW(w, u, 'deactivate')) throw new Denied('Your role cannot deactivate accounts.');
+          if (old && x.pw && !canW(w, u, 'delete')) throw new Denied('Your role cannot reset passwords.');
           if ((x.role === 'admin' || (old && old.role === 'admin')) && u.role !== 'admin') throw new Denied('Only the Administrator can manage administrator accounts.');
           if (x.id === u.id && (x.role !== u.role || x.active === false)) throw new Denied('You cannot change your own role or deactivate yourself.');
           const un = String(x.username || '').toLowerCase();
@@ -173,15 +190,16 @@
           if (x.pw) await setPw(w, x.id, x.pw); else if (!old) await setPw(w, x.id, 'welcome123');
           w.put(c, pub(x))
         } else {
-          if (!isHWS(u)) throw new Denied('Only HWS can change ' + c + '.');
-          if (c === 'routes' && !isLead(u)) throw new Denied('Only the Administrator or a Manager can change route rates.');
+          const need = c === 'routes' ? 'rates' : c === 'bases' ? 'bases' : 'vendors';
+          const onlyActive = c === 'vendors' && old && Object.keys(Object.assign({}, old, x)).every(k => k === 'active' || JSON.stringify(old[k]) === JSON.stringify(x[k]));
+          if (!(canW(w, u, need) || (onlyActive && canW(w, u, 'deactivate')))) throw new Denied('Your role cannot change ' + c + '.');
           w.put(c, x)
         }
       }
     }
     for (const c of Object.keys(dels)) {
       if (!COLLS.includes(c) || !Array.isArray(dels[c])) continue;
-      if (u.role !== 'admin') throw new Denied('Only the Administrator can delete.');
+      if (!canW(w, u, c === 'reqs' ? 'undo' : 'delete')) throw new Denied('Your role cannot delete ' + c + '.');
       for (const id of dels[c]) {
         if (c === 'users' && id === u.id) throw new Denied('You cannot delete your own account.');
         w.del(c, id); if (c === 'users') w.setSecret(String(id), null)
@@ -189,9 +207,12 @@
     }
     if (body.settings) {
       const cur = w.meta('settings', {}), s = body.settings;
-      if ((s.sla || s.rates) && !isLead(u)) throw new Denied('Only the Administrator or a Manager can change SLA targets and rates.');
-      if (s.ch && !isHWS(u)) throw new Denied('Only HWS can change notification channels.');
-      ['sla', 'rates', 'ch'].forEach(k => { if (s[k]) cur[k] = s[k] }); w.setMeta('settings', cur)
+      if ((s.sla || s.rates) && !canW(w, u, 'rates')) throw new Denied('Your role cannot change SLA targets and rates.');
+      if (s.ch && !canW(w, u, 'notif')) throw new Denied('Your role cannot change notification channels.');
+      if (s.perms && u.role !== 'admin') throw new Denied('Only the Administrator can change role permissions.');
+      ['sla', 'rates', 'ch'].forEach(k => { if (s[k]) cur[k] = s[k] });
+      if (s.perms) cur.perms = permsOf({ perms: s.perms });
+      w.setMeta('settings', cur)
     }
     bump(w)
   }
@@ -225,7 +246,7 @@
     if (p === '/api/data') return R(200, Object.assign(snapshot(w, u), { uid: u.id }));
     if (p === '/api/version') return R(200, { version: w.meta('version', 1) });
     if (p === '/api/seq') {
-      if (!isHWS(u) && u.role !== 'user') return R(403, { error: 'Your role cannot create requests.' });
+      if (!canW(w, u, 'create')) return R(403, { error: 'Your role cannot create requests.' });
       const id = w.meta('seq', 1000) + 1; w.setMeta('seq', id); await w.commit(); return R(200, { id })
     }
     if (p === '/api/sync') { await applySync(w, u, b || {}); await w.commit(); return R(200, { ok: true, version: w.meta('version', 1) }) }
