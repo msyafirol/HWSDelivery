@@ -1,0 +1,11 @@
+{
+  "name": "hwotg-delivery-tracking",
+  "version": "1.0.0",
+  "private": true,
+  "description": "HWOTG Delivery Tracking web application",
+  "main": "server.js",
+  "engines": { "node": ">=22.5" },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server.js"
+  }
+}

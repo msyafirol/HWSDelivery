@@ -1,0 +1,16 @@
+# Render blueprint: New > Blueprint, pick this repo. The disk keeps the database between deploys.
+services:
+  - type: web
+    name: hwotg-delivery-tracking
+    runtime: docker
+    plan: starter
+    healthCheckPath: /api/health
+    envVars:
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: COOKIE_SECURE
+        value: "1"
+    disk:
+      name: hwotg-data
+      mountPath: /data
+      sizeGB: 1
