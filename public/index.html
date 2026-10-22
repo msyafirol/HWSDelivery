@@ -1,0 +1,1057 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>HWOTG Delivery Tracking</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: enterprise shell. Dark navy shell bar, sectioned left navigation (slide-in on phones), page header with period control, KPI strip, then panels; request detail opens in a right-hand drawer. */
+:root{
+  --bg:#f3f5f8;--panel:#ffffff;--panel2:#f8fafc;--ink:#15202e;--muted:#5a6878;--line:#dfe4ea;--line2:#c6d0db;
+  --accent:#0a64c2;--on-accent:#ffffff;--accent-soft:#e6f0fb;
+  --shell:#13253b;--shell2:#1d3452;--shell-ink:#e8eef5;--shell-muted:#9fb1c6;
+  --ok:#15803d;--ok-soft:#e3f4e9;--warn:#b45309;--warn-soft:#fdf0dc;--bad:#c42b1c;--bad-soft:#fde8e6;
+  --teal:#0e7c86;--violet:#6d4bc0;--hover:#eef3f8;--land:#e3e9f0;--sea:#f6f9fb;--scrim:rgba(8,16,28,.48);
+  --c1:#0a64c2;--c2:#0e7c86;--c3:#b45309;--c4:#6d4bc0;--c5:#5a6878;
+  --f-body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0b131d;--panel:#121c28;--panel2:#0f1822;--ink:#e4ebf3;--muted:#97a6b8;--line:#223142;--line2:#33475e;
+  --accent:#58a2f0;--on-accent:#06111d;--accent-soft:#14304d;
+  --shell:#08111b;--shell2:#14263b;--shell-ink:#e4ebf3;--shell-muted:#8ea2b8;
+  --ok:#4cc483;--ok-soft:#10301e;--warn:#f0b04a;--warn-soft:#3a2b0f;--bad:#ff7d70;--bad-soft:#3e1a17;
+  --teal:#42c0c9;--violet:#a68ff0;--hover:#182737;--land:#1b2a3b;--sea:#0f1822;--scrim:rgba(0,0,0,.6);
+  --c1:#58a2f0;--c2:#42c0c9;--c3:#f0b04a;--c4:#a68ff0;--c5:#97a6b8;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b131d;--panel:#121c28;--panel2:#0f1822;--ink:#e4ebf3;--muted:#97a6b8;--line:#223142;--line2:#33475e;
+  --accent:#58a2f0;--on-accent:#06111d;--accent-soft:#14304d;
+  --shell:#08111b;--shell2:#14263b;--shell-ink:#e4ebf3;--shell-muted:#8ea2b8;
+  --ok:#4cc483;--ok-soft:#10301e;--warn:#f0b04a;--warn-soft:#3a2b0f;--bad:#ff7d70;--bad-soft:#3e1a17;
+  --teal:#42c0c9;--violet:#a68ff0;--hover:#182737;--land:#1b2a3b;--sea:#0f1822;--scrim:rgba(0,0,0,.6);
+  --c1:#58a2f0;--c2:#42c0c9;--c3:#f0b04a;--c4:#a68ff0;--c5:#97a6b8;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 var(--f-body);-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--shell);z-index:40}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3{text-wrap:balance}
+
+/* ---------- login ---------- */
+.login{min-height:100vh;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr)}
+.lg-brand{background:var(--shell);color:var(--shell-ink);padding:48px max(32px,env(safe-area-inset-left,0px)) 48px 48px;display:flex;flex-direction:column;justify-content:space-between;gap:32px}
+.lg-brand h1{font-size:30px;line-height:1.15;margin:18px 0 10px;font-weight:600;max-width:20ch}
+.lg-brand p{color:var(--shell-muted);max-width:46ch;margin:0}
+.lg-flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;max-width:520px}
+.lg-flow div{border-top:2px solid var(--accent);padding-top:8px;font-size:12px;color:var(--shell-muted)}
+.lg-flow div b{display:block;color:var(--shell-ink);font-weight:500;font-size:13px}
+.lg-form{display:flex;align-items:center;justify-content:center;padding:40px max(24px,env(safe-area-inset-right,0px)) 40px 24px}
+.lg-card{width:min(420px,100%);display:grid;gap:14px}
+.lg-card h2{margin:0;font-size:20px;font-weight:600}
+.lg-card label{display:grid;gap:4px;font-size:12.5px;color:var(--muted)}
+.lg-card input{height:40px}
+@media(max-width:820px){.login{grid-template-columns:minmax(0,1fr)}.lg-brand{padding:28px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px))}.lg-brand h1{font-size:23px}.lg-flow{display:none}.lg-form{padding:24px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px));align-items:flex-start}}
+
+/* ---------- shell ---------- */
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:var(--shell);color:var(--shell-ink);border-bottom:1px solid var(--shell2)}
+.top-in{display:flex;align-items:center;gap:12px;height:54px;padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;min-width:0;white-space:nowrap}
+.brand small{display:block;font-weight:400;font-size:10.5px;color:var(--shell-muted);letter-spacing:.06em;text-transform:uppercase}
+.logo{width:30px;height:30px;border-radius:7px;background:var(--accent);display:grid;place-items:center;flex:none;color:var(--on-accent)}
+.search{flex:1;max-width:460px;margin-left:16px}
+.search input{width:100%;height:34px;border-radius:6px;border:1px solid var(--shell2);background:var(--shell2);color:var(--shell-ink);padding:0 12px}
+.search input::placeholder{color:var(--shell-muted)}
+.sp{flex:1}
+.ib{position:relative;width:36px;height:36px;border-radius:6px;border:0;background:transparent;color:var(--shell-ink);cursor:pointer;display:grid;place-items:center;flex:none}
+.ib:hover{background:var(--shell2)}
+.ib b{position:absolute;top:2px;right:0;min-width:17px;height:17px;border-radius:9px;background:var(--bad);color:#fff;font-size:10.5px;display:grid;place-items:center;padding:0 4px;font-weight:600}
+.av{display:flex;align-items:center;gap:8px;border:0;background:transparent;color:var(--shell-ink);cursor:pointer;padding:4px 6px;border-radius:6px;text-align:left}
+.av:hover{background:var(--shell2)}
+.av i{width:30px;height:30px;border-radius:50%;background:var(--shell2);display:grid;place-items:center;font-style:normal;font-weight:600;font-size:12px;flex:none;border:1px solid var(--shell-muted)}
+.av span{display:block;font-size:13px;line-height:1.2}.av small{display:block;font-size:11px;color:var(--shell-muted)}
+.menu-btn{display:none!important}
+.bn{overflow:hidden;text-overflow:ellipsis}
+@media(max-width:560px){.bl{display:none}}
+.mapw{min-width:640px}
+.pop{position:fixed;top:calc(58px + env(safe-area-inset-top,0px));right:max(10px,env(safe-area-inset-right,0px));width:min(380px,calc(100vw - 20px));max-height:72vh;overflow-y:auto;background:var(--panel);border:1px solid var(--line);border-radius:8px;z-index:45;box-shadow:0 12px 32px rgba(0,0,0,.22)}
+.pop-h{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.nt{padding:10px 14px;border-bottom:1px solid var(--line);cursor:pointer;display:grid;gap:2px}
+.nt:hover{background:var(--hover)}.nt.u{box-shadow:inset 3px 0 0 var(--accent)}
+.ch{font-size:11.5px;color:var(--muted)}
+.layout{display:grid;grid-template-columns:236px minmax(0,1fr);min-height:calc(100vh - 54px)}
+nav.side{background:var(--panel);border-right:1px solid var(--line);padding:12px 10px 24px max(10px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:1px;position:sticky;top:calc(54px + env(safe-area-inset-top,0px));height:calc(100vh - 54px - env(safe-area-inset-top,0px));overflow-y:auto}
+.grp{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);padding:14px 10px 6px;font-weight:600}
+.grp:first-child{padding-top:4px}
+.nv{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;border:0;background:none;color:var(--ink);cursor:pointer;text-align:left;width:100%}
+.nv:hover{background:var(--hover)}
+.nv[aria-current="page"]{background:var(--accent-soft);color:var(--accent);font-weight:600;box-shadow:inset 3px 0 0 var(--accent)}
+.nv svg{flex:none}
+.nv .cnt{margin-left:auto;font-size:11px;background:var(--hover);color:var(--muted);border-radius:9px;padding:0 7px;font-variant-numeric:tabular-nums}
+.side-foot{margin-top:auto;padding:16px 10px 0;font-size:11.5px;color:var(--muted);border-top:1px solid var(--line)}
+main{min-width:0;padding:22px 28px 56px 28px;padding-right:max(28px,env(safe-area-inset-right,0px))}
+.scrim{position:fixed;inset:0;background:var(--scrim);z-index:34}
+@media(max-width:900px){
+  .menu-btn{display:grid!important}
+  .search{display:none}.search.open{display:block;position:fixed;left:0;right:0;top:calc(54px + env(safe-area-inset-top,0px));margin:0;max-width:none;padding:8px max(12px,env(safe-area-inset-right,0px)) 8px max(12px,env(safe-area-inset-left,0px));background:var(--shell);z-index:31}
+  .av span,.av small{display:none}
+  .brand small{display:none}
+  .layout{grid-template-columns:minmax(0,1fr)}
+  nav.side{position:fixed;left:0;top:0;bottom:0;height:auto;width:min(290px,86vw);z-index:36;transform:translateX(-102%);transition:transform .2s ease;padding-top:calc(14px + env(safe-area-inset-top,0px));padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))}
+  nav.side.open{transform:none;box-shadow:8px 0 30px rgba(0,0,0,.3)}
+  main{padding:16px max(16px,env(safe-area-inset-right,0px)) 64px max(16px,env(safe-area-inset-left,0px))}
+  .hide-m{display:none}
+}
+@media(min-width:901px){.show-m{display:none}}
+
+/* ---------- page parts ---------- */
+.ph{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:flex-end;justify-content:space-between;margin-bottom:18px}
+.crumb{font-size:12px;color:var(--muted);margin-bottom:2px}
+.ph h1{font-size:22px;font-weight:600;margin:0;letter-spacing:-.01em}
+.ph p{margin:3px 0 0;color:var(--muted)}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:6px;overflow:hidden;background:var(--panel);max-width:100%;overflow-x:auto}
+.seg button{border:0;background:none;padding:6px 12px;cursor:pointer;border-right:1px solid var(--line2);white-space:nowrap}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);font-weight:500}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;min-width:0;position:relative}
+.kpi .l{font-size:12px;color:var(--muted);font-weight:500}
+.kpi .v{font-size:25px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.25;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi .s{font-size:12px;color:var(--muted)}
+.kpi.bad{box-shadow:inset 0 3px 0 var(--bad)}.kpi.warn{box-shadow:inset 0 3px 0 var(--warn)}.kpi.ok{box-shadow:inset 0 3px 0 var(--ok)}.kpi.acc{box-shadow:inset 0 3px 0 var(--accent)}
+.kpi.bad .v{color:var(--bad)}
+.grid{display:grid;gap:14px;margin-bottom:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr))}
+.grid.g2{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}
+@media(max-width:1100px){.grid.g2{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;min-width:0}
+.panel>.hd{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.panel>.hd h2{font-size:13.5px;font-weight:600;margin:0}
+.panel>.hd span{font-size:12px;color:var(--muted)}
+.panel>.bd{padding:14px 16px}
+.panel>.bd.flush{padding:0}
+.chart{width:100%;height:auto;display:block}
+.ax{fill:var(--muted);font:11px var(--f-body)}.gl{stroke:var(--line);stroke-width:1}
+.ln{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linejoin:round}.ar{fill:var(--accent);opacity:.1}
+.bar-a{fill:var(--accent)}.bar-b{fill:var(--c2)}.dot{fill:var(--accent);stroke:var(--panel);stroke-width:2}
+.vl{fill:var(--ink);font:600 11px var(--f-body)}
+.hb{display:grid;grid-template-columns:minmax(84px,150px) 1fr auto;gap:6px 10px;align-items:center;font-size:13px}
+.hb .tr{height:10px;border-radius:5px;background:var(--hover);overflow:hidden}
+.hb .tr i{display:block;height:100%;background:var(--accent);border-radius:5px}
+.hb .n{text-align:right;font-variant-numeric:tabular-nums;font-weight:500;white-space:nowrap;min-width:44px}
+.hb .lb{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tw{overflow-x:auto}
+table.t{width:100%;border-collapse:collapse;font-size:13px}
+table.t th{text-align:left;font-weight:600;color:var(--muted);font-size:11.5px;letter-spacing:.02em;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--panel2)}
+table.t td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.t tbody tr:last-child td{border-bottom:0}
+table.t tr.rw{cursor:pointer}table.t tr.rw:hover td{background:var(--hover)}
+table.t tr.sel td{background:var(--accent-soft)}
+table.t .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.t tfoot td{font-weight:600;border-top:1px solid var(--line2);background:var(--panel2)}
+.mono{font-family:var(--f-mono);font-size:12.5px;font-weight:500}
+.pill{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:12px;border:1px solid var(--line);border-radius:11px;padding:1px 9px 1px 7px;background:var(--panel)}
+.pill::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c)}
+.sla{display:inline-block;white-space:nowrap;font-size:12px;font-weight:500;border-radius:4px;padding:1px 8px}
+.sla.green{background:var(--ok-soft);color:var(--ok)}.sla.amber{background:var(--warn-soft);color:var(--warn)}.sla.red{background:var(--bad-soft);color:var(--bad)}.sla.na{background:var(--hover);color:var(--muted)}
+.tag{display:inline-block;font-size:11.5px;border-radius:4px;padding:1px 7px;background:var(--hover);color:var(--muted);white-space:nowrap}
+.tag.acc{background:var(--accent-soft);color:var(--accent)}
+.btn{border:1px solid var(--line2);background:var(--panel);border-radius:6px;padding:7px 14px;cursor:pointer;font-weight:500;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--ink)}
+.btn:hover{background:var(--hover)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}.btn.pri:hover{filter:brightness(1.07)}
+.btn.dng{border-color:var(--bad);color:var(--bad)}
+.btn.sm{padding:4px 10px;font-size:12.5px}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.flt{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;align-items:flex-end}
+.flt label,.f label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:500}
+input,select,textarea{background:var(--panel);border:1px solid var(--line2);border-radius:6px;padding:6px 10px;min-height:34px;color:var(--ink);max-width:100%}
+input[type=checkbox]{min-height:0;width:16px;height:16px;accent-color:var(--accent)}
+textarea{width:100%;min-height:64px;resize:vertical}
+.f{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr))}
+.f .wide{grid-column:1/-1}
+.f input,.f select{width:100%}
+.f label.chk,label.chk{display:flex;flex-direction:row;align-items:center;gap:6px;font-size:13px;color:var(--ink);font-weight:400}
+.hint{font-size:12px;color:var(--muted)}
+.err{color:var(--bad);font-size:12.5px;min-height:18px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);align-items:center}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.heat{display:grid;gap:3px;font-size:12.5px;min-width:420px}
+.heat div{padding:7px 8px;border-radius:4px;text-align:center;font-variant-numeric:tabular-nums}
+.heat .h{color:var(--muted);background:none;font-size:12px}.heat .rl{text-align:left;background:none}
+.hg{background:var(--ok-soft);color:var(--ok)}.ha{background:var(--warn-soft);color:var(--warn)}.hr{background:var(--bad-soft);color:var(--bad)}.hn{background:var(--hover);color:var(--muted)}
+.empty{padding:28px;text-align:center;color:var(--muted)}
+.stack{display:flex;height:14px;border-radius:4px;overflow:hidden;background:var(--hover)}
+.stack i{display:block;height:100%}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:16px;overflow-x:auto}
+.tabs button{border:0;background:none;padding:9px 14px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;color:var(--muted);font-weight:500}
+.tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+.exp{display:inline-flex;gap:6px;flex-wrap:wrap}
+fieldset{border:1px solid var(--line);border-radius:6px;padding:10px 12px;margin:0;min-width:0}
+
+/* ---------- map ---------- */
+.map{width:100%;height:auto;display:block;background:var(--sea);border-radius:6px}
+.land{fill:var(--land);stroke:var(--line2);stroke-width:1.2;stroke-linejoin:round}
+.brn{fill:var(--sea);stroke:var(--line2);stroke-width:1;stroke-dasharray:3 3}
+.bub{cursor:pointer;stroke:var(--panel);stroke-width:1.5;fill-opacity:.85}
+.bub:hover,.bub.on{stroke:var(--ink);stroke-width:2.5}
+.bub.g{fill:var(--ok)}.bub.a{fill:var(--warn)}.bub.r{fill:var(--bad)}.bub.n{fill:var(--muted)}
+.mlb{fill:var(--ink);font:600 11px var(--f-body);pointer-events:none;paint-order:stroke;stroke:var(--sea);stroke-width:3px}
+.mlb2{fill:var(--muted);font:11px var(--f-body);pointer-events:none}
+.wh{fill:var(--ink)}
+.divl{stroke:var(--line2);stroke-dasharray:4 4}
+
+/* ---------- drawer ---------- */
+.ov{position:fixed;inset:0;background:var(--scrim);z-index:50}
+.dr{position:fixed;top:0;right:0;bottom:0;width:min(600px,100%);background:var(--bg);z-index:51;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom,0px);box-shadow:-8px 0 30px rgba(0,0,0,.25)}
+.dr-h{position:sticky;top:0;background:var(--panel);border-bottom:1px solid var(--line);padding:calc(12px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 12px max(16px,env(safe-area-inset-left,0px));display:flex;gap:8px;align-items:center;flex-wrap:wrap;z-index:2}
+.dr-b{padding:14px max(16px,env(safe-area-inset-right,0px)) 32px max(16px,env(safe-area-inset-left,0px));display:grid;gap:12px}
+.x{margin-left:auto}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 16px;margin:0}
+.kv dt{font-size:11.5px;color:var(--muted)}.kv dd{margin:0;font-weight:500;overflow-wrap:anywhere}
+.next{box-shadow:inset 3px 0 0 var(--accent);background:var(--accent-soft);padding:10px 14px;border-radius:6px}
+.tl{list-style:none;margin:0;padding:0}
+.tl li{display:grid;grid-template-columns:20px 1fr;gap:10px;padding-bottom:12px;position:relative}
+.tl li::before{content:"";position:absolute;left:7px;top:16px;bottom:-2px;width:2px;background:var(--line)}
+.tl li:last-child::before{display:none}
+.tl i{width:16px;height:16px;border-radius:50%;border:2px solid var(--line2);background:var(--panel);margin-top:2px}
+.tl li.d i{background:var(--ok);border-color:var(--ok)}.tl li.c i{border-color:var(--accent);background:var(--accent-soft)}.tl li.x2 i{background:var(--bad);border-color:var(--bad)}
+.tl .n{font-weight:500}.tl .m{font-size:12px;color:var(--muted)}
+.mt{display:grid;grid-template-columns:100px 1fr 96px;gap:8px;align-items:center;font-size:12.5px;margin-bottom:8px}
+.mt .tr{height:8px;background:var(--hover);border-radius:4px;overflow:hidden}.mt .tr i{display:block;height:100%}
+.mt .g{background:var(--ok)}.mt .a{background:var(--warn)}.mt .r{background:var(--bad)}
+.ph-box{border:1px solid var(--line);border-radius:6px;padding:12px;background:var(--panel2)}
+.ph-box img{display:block;border-radius:4px;border:1px solid var(--line);max-width:100%;max-height:180px;margin:8px 0}
+.sigimg{background:#ffffff}
+canvas#sig{width:100%;height:140px;background:#ffffff;border:1px dashed var(--muted);border-radius:6px;touch-action:none;display:block}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(24px + env(safe-area-inset-bottom,0px));background:var(--shell);color:var(--shell-ink);padding:10px 16px;border-radius:8px;z-index:70;max-width:min(92vw,480px);box-shadow:0 6px 24px rgba(0,0,0,.3)}
+.jtabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:14px 16px 4px}
+.jtabs button{border:1px solid var(--line);background:var(--panel2);border-radius:8px;padding:10px 12px;cursor:pointer;text-align:left;display:grid;gap:2px;min-width:0}
+.jtabs button:hover{background:var(--hover)}
+.jtabs button[aria-selected="true"]{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 3px 0 var(--accent)}
+.jtabs .jl{font-weight:600;font-size:13px}.jtabs .jn{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.2}.jtabs .jh{font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.jtabs button[aria-selected="true"] .jl,.jtabs button[aria-selected="true"] .jn{color:var(--accent)}
+.jb{padding:10px 16px 16px}
+.jb .jobs{max-width:none;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))}
+@media(max-width:560px){.jtabs{gap:6px;padding:12px 12px 4px}.jtabs button{padding:8px}.jtabs .jh{display:none}.jtabs .jn{font-size:20px}.jb{padding:10px 12px 14px}}
+#alerts{position:fixed;top:calc(62px + env(safe-area-inset-top,0px));right:max(12px,env(safe-area-inset-right,0px));z-index:60;display:grid;gap:8px;width:min(340px,calc(100vw - 24px));pointer-events:none}
+.alert{pointer-events:auto;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px;padding:10px 12px;box-shadow:0 10px 28px rgba(0,0,0,.22);display:grid;grid-template-columns:1fr auto;gap:2px 8px;cursor:pointer}
+.alert.bad{border-left-color:var(--bad)}.alert.ok{border-left-color:var(--ok)}
+.alert b{font-size:13.5px}.alert .x3{grid-row:1/4;grid-column:2;border:0;background:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:0 2px;align-self:start}
+@media(prefers-reduced-motion:no-preference){.alert{animation:al .22s ease-out}@keyframes al{from{transform:translateY(-8px);opacity:0}}}
+.jc{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;display:grid;gap:8px}
+.jobs{display:grid;gap:12px;max-width:680px}
+.mat td,.mat th{text-align:center}.mat td:first-child,.mat th:first-child{text-align:left}
+.yes{color:var(--ok);font-weight:600}.no{color:var(--muted)}
+.rc input{width:92px;text-align:right}
+/* bases, contact cards, attachments */
+.nf{display:grid;gap:14px}
+.ic{border:1px solid var(--line);border-radius:6px;padding:10px 12px;background:var(--panel2);min-width:0;overflow-wrap:anywhere}
+.pair{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
+.cc{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:14px;align-items:start}
+@media(max-width:700px){.cc{grid-template-columns:minmax(0,1fr)}}
+.mini{width:100%;height:auto;max-height:180px;display:block;background:var(--sea);border-radius:6px}
+.pin-from{fill:var(--c2);stroke:var(--panel)}.pin-to{fill:var(--bad);stroke:var(--panel)}
+.rt{stroke:var(--accent);fill:none}
+.att2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:14px}
+.atl{display:grid;gap:6px;margin-top:6px}
+.af{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:6px;padding:6px 8px;background:var(--panel);min-width:0}
+.af .nm{flex:1;min-width:0;overflow:hidden}
+.fi{width:34px;height:34px;object-fit:cover;border-radius:4px;flex:none;border:1px solid var(--line)}
+.ft{display:grid;place-items:center;font-size:10px;font-weight:600;color:var(--muted);background:var(--hover)}
+.lnk{border:0;background:none;padding:0;color:var(--accent);cursor:pointer;text-align:left;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;font:inherit}
+.lnk:hover{text-decoration:underline}
+.f label.btn,.att2 label.btn{display:inline-flex;flex-direction:row;color:var(--ink);font-size:12.5px}
+.lbl{font-size:12px;color:var(--muted);font-weight:500;margin-bottom:6px}
+tr.off td{opacity:.6}
+@media(prefers-reduced-motion:no-preference){.dr{animation:sl .18s ease-out}@keyframes sl{from{transform:translateX(24px);opacity:.4}}}
+@media(prefers-reduced-motion:reduce){nav.side{transition:none}}
+</style>
+<div id="app"></div>
+<div id="layer"></div>
+<script>
+(function(){
+"use strict";
+const H=36e5,D=864e5;
+const $=(s,r)=>(r||document).querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const p2=n=>String(n).padStart(2,'0');
+const iso=t=>{if(!t)return '';const d=new Date(t);return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())+' '+p2(d.getHours())+':'+p2(d.getMinutes())};
+const fdt=t=>t?new Date(t).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false}):'—';
+const fd=t=>t?new Date(t).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'—';
+const dur=h=>h==null?'—':h<1?Math.max(1,Math.round(h*60))+' min':h<48?h.toFixed(1)+' h':(h/24).toFixed(1)+' d';
+const pct=(a,b)=>b?Math.round(a/b*100):0;
+const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
+const sum=a=>a.reduce((x,y)=>x+y,0);
+const rm=(v,dp)=>'RM '+Number(v||0).toLocaleString('en-MY',{minimumFractionDigits:dp==null?0:dp,maximumFractionDigits:dp==null?0:dp});
+const rmk=v=>v>=1e5?'RM '+(v/1e3).toFixed(0)+'k':v>=1e4?'RM '+(v/1e3).toFixed(1)+'k':rm(v);
+const r2=v=>Math.round(v*100)/100;
+let seed=20261022;const R=()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+const pick=a=>a[Math.floor(R()*a.length)];
+const wpick=(a,w)=>{let s=R()*sum(w);for(let i=0;i<a.length;i++){s-=w[i];if(s<=0)return a[i]}return a[a.length-1]};
+const uid=p=>p+Date.now().toString(36).slice(-5)+Math.floor(Math.random()*1e3);
+
+/* ================= reference data ================= */
+const WH={name:'Central Warehouse, Shah Alam',lat:3.0360,lng:101.5370};
+const REGIONS=['Northern','Central','Southern','East Coast','East Malaysia'];
+const STATES=[
+ ['PLS','Perlis','Northern','Kangar',6.4414,100.1986,2],
+ ['KDH','Kedah','Northern','Alor Setar',6.1248,100.3678,5],
+ ['PNG','Pulau Pinang','Northern','George Town',5.4141,100.3288,9],
+ ['PRK','Perak','Northern','Ipoh',4.5975,101.0901,7],
+ ['SGR','Selangor','Central','Klang',3.0449,101.4456,14],
+ ['KUL','WP Kuala Lumpur','Central','Kuala Lumpur',3.1390,101.6869,14],
+ ['PJY','WP Putrajaya','Central','Putrajaya',2.9264,101.6964,4],
+ ['NSN','Negeri Sembilan','Southern','Seremban',2.7258,101.9424,4],
+ ['MLK','Melaka','Southern','Melaka',2.1896,102.2501,4],
+ ['JHR','Johor','Southern','Johor Bahru',1.4927,103.7414,10],
+ ['PHG','Pahang','East Coast','Kuantan',3.8077,103.3260,5],
+ ['TRG','Terengganu','East Coast','Kuala Terengganu',5.3302,103.1408,4],
+ ['KTN','Kelantan','East Coast','Kota Bharu',6.1254,102.2381,4],
+ ['SWK','Sarawak','East Malaysia','Kuching',1.5533,110.3592,7],
+ ['SBH','Sabah','East Malaysia','Kota Kinabalu',5.9804,116.0735,7],
+ ['LBN','WP Labuan','East Malaysia','Labuan',5.2831,115.2308,2]
+].map(a=>({id:a[0],name:a[1],region:a[2],city:a[3],lat:a[4],lng:a[5],w:a[6],store:a[3]+' service point'}));
+const ST=id=>STATES.find(s=>s.id===id);
+const ZONE=s=>s.region==='East Malaysia'?'C':['SGR','KUL','PJY','NSN'].includes(s.id)?'A':'B';
+const ZN={A:'Zone A · Klang Valley',B:'Zone B · Peninsular',C:'Zone C · East Malaysia'};
+const ITEMS=['HDD 2.4TB SAS 10K','System board X-series','Power supply 750W','RAID controller 12Gb','DDR4 32GB RDIMM','Fan module hot-swap','NIC 10GbE dual port','Switch module 24-port','Laptop LCD panel 14"','SSD 960GB enterprise','Router line card','Optical transceiver SFP+'];
+const ROLE={admin:'Administrator',manager:'HWS Manager',hws:'HWS Staff',vendor:'Vendor Admin',driver:'Driver',user:'Regional User'};
+const isHWS=u=>!!u&&['admin','manager','hws'].includes(u.role);
+const isLead=u=>!!u&&['admin','manager'].includes(u.role);
+const EV=['created','validated','assigned','collected','transit','delivered','decided','vconfirm','completed'];
+const SC={'Request Created':'var(--muted)','Pending Vendor Assignment':'var(--warn)','Driver Assigned':'var(--accent)','Collected from Warehouse':'var(--accent)','In Transit':'var(--teal)','Delivered':'var(--violet)','Accepted':'var(--ok)','Rejected':'var(--bad)','Completed':'var(--ok)'};
+const STATUSES=Object.keys(SC);
+const ACTIVE=['Driver Assigned','Collected from Warehouse','In Transit'];
+
+/* ================= store ================= */
+// The server holds the shared database. save() sends only the records that changed since the last load.
+let DB=null,SNAP=null,syncQ=Promise.resolve(),syncing=0;
+const S={nr:{},uid:null,view:'',q:'',f:{},lim:25,sel:null,tmp:{},pop:'',nav:false,period:'90',rep:'delivery',adm:'users',mapM:'req',mapSel:null,vsel:'',costLim:20,form:null,pwForm:false,jt:'new',jlim:10};
+const COLL=['users','vendors','drivers','bases','routes','reqs','notifs','audit'],DELC=['users','bases','routes','reqs'],SETK=['sla','rates','ch'];
+// The offline edition (one HTML file) answers the same API in the browser through window.HWOTG_LOCAL.
+const LOCAL=window.HWOTG_LOCAL||null;
+async function api(p,b){let r,j={};
+  if(LOCAL){const x=await LOCAL.api(p,b===undefined?{}:JSON.parse(JSON.stringify(b)));r={status:x.status,ok:x.status<300};j=x.body||{}}
+  else{const o={credentials:'same-origin',method:b===undefined?'GET':'POST'};if(b!==undefined){o.headers={'Content-Type':'application/json'};o.body=JSON.stringify(b)}
+    try{r=await fetch(p,o)}catch(e){throw new Error('Cannot reach the server. Check the internet connection.')}
+    try{j=await r.json()}catch(e){}}
+  if(r.status===401&&p!=='/api/login'){signedOut();throw new Error(j.error||'Sign in again.')}
+  if(!r.ok)throw new Error(j.error||'Request failed ('+r.status+')');return j}
+function snapOf(d){const s={};COLL.forEach(c=>{const m=new Map();(d[c]||[]).forEach(x=>m.set(String(x.id),JSON.stringify(x)));s[c]=m});SETK.forEach(k=>s[k]=JSON.stringify(d[k]));return s}
+function diff(){const cur=snapOf(DB),up={},dl={};let n=0;
+  COLL.forEach(c=>{const a=[];cur[c].forEach((j,id)=>{if(SNAP[c].get(id)!==j)a.push(JSON.parse(j))});if(a.length){up[c]=a;n++}
+    if(DELC.includes(c)){const d=[...SNAP[c].keys()].filter(id=>!cur[c].has(id));if(d.length){dl[c]=d;n++}}});
+  const st={};SETK.forEach(k=>{if(cur[k]!==SNAP[k]){st[k]=DB[k];n++}});SNAP=cur;return n?{upserts:up,deletes:dl,settings:Object.keys(st).length?st:null}:null}
+function save(){if(!DB||!SNAP)return true;const p=diff();if(!p)return true;syncing++;
+  syncQ=syncQ.then(()=>api('/api/sync',p)).catch(e=>{if(S.uid)toast((e.message||'Could not save')+' Showing the latest saved data.')}).finally(()=>{syncing--;if(!syncing&&S.uid)refresh()});return true}
+async function loadData(){const d=await api('/api/data');DB=d;SNAP=snapOf(DB);S.uid=d.uid}
+const busy=()=>{const a=document.activeElement;return S.view==='new'||!!S.form||S.pwForm||!!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))||!!(S.sel&&$('#layer .f'))};
+async function refresh(){try{await loadData()}catch(e){return}if(!me())return signedOut();checkAlerts();
+  renderNav();renderBadge();if(S.pop==='bell')renderPop();if(!busy()){renderMain();if(S.sel)renderDrawer()}}
+function signedOut(){seenN=null;const al=$('#alerts');if(al)al.innerHTML='';S.uid=null;S.pop='';S.nav=false;S.pwForm=false;SNAP=null;renderLogin()}
+setInterval(()=>{if(S.uid&&!syncing)api('/api/version').then(v=>{if(DB&&v.version!==DB.version&&!syncing)refresh()}).catch(()=>{})},10000);
+if(LOCAL&&'BroadcastChannel' in window)new BroadcastChannel('hwotg-offline').addEventListener('message',()=>{if(S.uid&&!syncing)setTimeout(refresh,150)});
+document.addEventListener('visibilitychange',()=>{if(S.uid&&document.visibilityState==='visible'&&!syncing)refresh()});
+const me=()=>DB&&DB.users.find(u=>u.id===S.uid);
+// Live alerts: a popup and a sound for every transaction that reaches this user from someone else.
+let seenN=null,actx=null;
+const sndOn=()=>{try{return localStorage.getItem('hwotg.sound')!=='off'}catch(e){return true}};
+const setSound=on=>{try{localStorage.setItem('hwotg.sound',on?'on':'off')}catch(e){}if(on)beep('note')};
+function audio(){try{actx=actx||new(window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume()}catch(e){actx=null}return actx}
+document.addEventListener('pointerdown',audio,{capture:true,passive:true});
+function beep(kind){if(!sndOn()||!audio())return;const t0=actx.currentTime,f={alert:[988,740,988],note:[784,1047],done:[660,880]}[kind]||[784,1047];
+  f.forEach((hz,i)=>{const o=actx.createOscillator(),g=actx.createGain(),t=t0+i*.15;o.type='sine';o.frequency.value=hz;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(kind==='done'?.08:.2,t+.02);g.gain.exponentialRampToValueAtTime(.001,t+.32);o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+.34)})}
+const isBadN=n=>/SLA|rejected|undone/i.test(n.title),isOkN=n=>/accepted|closed|confirmed/i.test(n.title);
+function popup(n){let box=$('#alerts');if(!box){box=document.createElement('div');box.id='alerts';box.setAttribute('aria-live','polite');document.body.appendChild(box)}
+  const el=document.createElement('div');el.className='alert'+(isBadN(n)?' bad':isOkN(n)?' ok':'');el.dataset.act='open';el.dataset.id=n.rid;el.dataset.n=n.id;el.setAttribute('role','status');
+  el.innerHTML='<b>'+esc(n.title)+'</b><span>'+esc(n.text)+'</span><span class="ch">'+fdt(n.ts)+' · tap to open</span><button class="x3" data-act="alertx" aria-label="Dismiss">×</button>';
+  box.prepend(el);while(box.children.length>4)box.lastChild.remove();setTimeout(()=>el.remove(),10000)}
+function checkAlerts(){const u=me();if(!u)return;const a=notifFor();if(!seenN){seenN=new Set(a.map(n=>n.id));return}
+  const fresh=a.filter(n=>!seenN.has(n.id));fresh.forEach(n=>seenN.add(n.id));const inc=fresh.filter(n=>n.by!==u.id).sort((x,y)=>x.ts-y.ts);if(!inc.length)return;
+  inc.slice(-4).forEach(popup);beep(inc.some(isBadN)?'alert':'note');
+  if(document.hidden&&window.Notification&&Notification.permission==='granted')inc.slice(-3).forEach(n=>{try{new Notification(n.title,{body:n.text,tag:n.id})}catch(e){}})}
+const V=id=>DB.vendors.find(v=>v.id===id)||{name:'Unknown vendor',coverage:[],base:0,perKm:0,toll:0,air:0};
+const DR=id=>DB.drivers.find(d=>d.id===id);
+const UN=id=>{const u=DB.users.find(x=>x.id===id);return u?u.name:''};
+const B=id=>DB.bases.find(b=>b.id===id)||{id:id,name:'Removed location',type:'Store',address:'',state:'SGR',lat:3.07,lng:101.5,phone:'',active:false};
+const FROM=r=>B(r.from),TO=r=>B(r.to);
+const isEM=b=>ST(b.state).region==='East Malaysia';
+const crossSea=(a,b)=>isEM(a)!==isEM(b);
+function kmBetween(a,b){return crossSea(a,b)?18:Math.round(hav(a,b)*1.3+6)}
+const gmap=b=>'https://www.google.com/maps/search/?api=1&query='+b.lat+','+b.lng;
+function userSees(u,r){return r.requestor===u.id||(!!u.base&&r.to===u.base)}
+function routeFor(f,t,v){const a=DB.routes.filter(x=>x.from===f&&x.to===t);return a.find(x=>x.vendor===v)||a.find(x=>!x.vendor)||null}
+const txtData=s=>'data:text/plain;base64,'+btoa(unescape(encodeURIComponent(s)));
+function audit(action,remarks){const u=me();DB.audit.push({id:uid('a'),ts:Date.now(),user:u?u.name:'System',role:u?ROLE[u.role]:'',action,no:'',remarks:remarks||''})}
+
+function uname(n){return n.toLowerCase().replace(/[^a-z ]/g,'').trim().split(/\s+/).slice(0,2).join('.')}
+
+/* ================= geo, SLA, cost ================= */
+function hav(a,b){const r=x=>x*Math.PI/180,dl=r(b.lat-a.lat),dg=r(b.lng-a.lng);const h=Math.sin(dl/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dg/2)**2;return 12742*Math.asin(Math.sqrt(h))}
+const jit=(p,m)=>({lat:+(p.lat+(R()-.5)*m).toFixed(5),lng:+(p.lng+(R()-.5)*m).toFixed(5)});
+const statusOf=r=>{const t=r.t;if(t.completed)return'Completed';if(r.rejected&&t.decided)return'Rejected';if(t.vconfirm||t.decided)return'Accepted';if(t.delivered)return'Delivered';if(t.transit)return'In Transit';if(t.collected)return'Collected from Warehouse';if(t.assigned)return'Driver Assigned';if(t.validated)return'Pending Vendor Assignment';return'Request Created'};
+const isOpen=r=>!['Completed','Rejected'].includes(statusOf(r));
+const MET=[['response','Response','created','assigned'],['collection','Collection','assigned','collected'],['delivery','Delivery','collected','delivered'],['e2e','End-to-end','created',null]];
+function target(k,s){const v=DB.sla[k];return typeof v==='object'?v[ZONE(s)]:v}
+function metric(r,m){const s0=r.t[m[2]];if(!s0)return null;const endAll=r.t.completed||(r.rejected&&r.t.decided)||null;const e0=m[3]?r.t[m[3]]:endAll;const done=e0!=null;const e=done?e0:Date.now();const h=(e-s0)/H,tg=target(m[0],ST(r.st));return{k:m[0],n:m[1],h,tg,done,st:done?(h<=tg?'met':'breached'):(h>tg?'breached':h>=.75*tg?'near':'ok')}}
+function slaOf(r){const ms=MET.map(m=>metric(r,m)).filter(Boolean);let c='green';if(ms.some(x=>x.st==='breached'))c='red';else if(ms.some(x=>x.st==='near'))c='amber';return{c,ms}}
+const LBL={green:'Within SLA',amber:'Near breach',red:'Breached'};
+const slaPill=r=>{const s=slaOf(r);return'<span class="sla '+s.c+'">'+LBL[s.c]+'</span>'};
+const pill=s=>'<span class="pill" style="--c:'+SC[s]+'">'+s+'</span>';
+function kmOf(s){const t=DB.bases.find(b=>b.type==='Store'&&b.state===s.id&&b.active!==false);return t?kmBetween(B('B00'),t):0}
+function costOf(r){if(!r.vendor)return null;const v=V(r.vendor),F=FROM(r),T=TO(r),km=kmBetween(F,T),air=crossSea(F,T),rt=routeFor(r.from,r.to,r.vendor);
+  let base,dist=0,toll=0,airc=0;if(rt){base=rt.price}else{base=v.base;dist=v.perKm*km;toll=air?0:v.toll*km;airc=air?v.air:0}
+  const sub=base+dist+toll+airc,sur=sub*(DB.rates.sur[r.prio]||0),red=(r.redisp||0)*sub;
+  return{km,base:r2(base),dist:r2(dist),toll:r2(toll),air:r2(airc),sur:r2(sur),red:r2(red),total:r2(sub+sur+red),basis:rt?'Route rate':'Formula',final:!!(r.t&&(r.t.completed||(r.rejected&&r.t.decided)))}}
+const costView=r=>r.cost||costOf(r);
+const costTot=r=>{const c=costView(r);return c?c.total:0};
+
+/* ================= scope ================= */
+function scope(){const u=me();if(!u)return[];let a=DB.reqs;if(u.role==='user')a=a.filter(r=>userSees(u,r));if(u.role==='vendor')a=a.filter(r=>r.vendor===u.vendor);if(u.role==='driver')a=a.filter(r=>r.driver===u.driver);return a}
+function periodStart(){const p=S.period,now=new Date();if(p==='mtd')return new Date(now.getFullYear(),now.getMonth(),1).getTime();if(p==='all')return 0;return Date.now()-(+p)*D}
+const PLBL={mtd:'Month to date','30':'Last 30 days','90':'Last 90 days','180':'Last 180 days',all:'All time'};
+const inPeriod=a=>{const s=periodStart();return a.filter(r=>r.t.created>=s)};
+function months(n){const o=[],d=new Date();for(let i=n-1;i>=0;i--){const x=new Date(d.getFullYear(),d.getMonth()-i,1);o.push({y:x.getFullYear(),m:x.getMonth(),l:x.toLocaleString('en-GB',{month:'short'})+(i===0?'*':'')})}return o}
+const inMonth=(ts,mo)=>{if(!ts)return false;const d=new Date(ts);return d.getFullYear()===mo.y&&d.getMonth()===mo.m};
+
+/* ================= notifications ================= */
+const NOTE={created:['Request created',['hws']],validated:['Ready for driver assignment',['vendor']],assigned:['Driver assigned',['hws','user','driver']],collected:['Collection completed',['hws','vendor']],transit:['Delivery in transit',['user']],delivered:['Delivered, acceptance needed',['user','hws']],accepted:['Item accepted',['hws','vendor']],rejected:['Item rejected',['hws','vendor']],vconfirm:['Vendor confirmed completion',['hws','user']],completed:['Job closed',['user','vendor','driver']],redispatch:['Re-dispatched after rejection',['hws','user']],undo:['Step undone',['hws','vendor','driver','user']],sla:['SLA breach',['lead','vendor']]};
+function notify(r,k,ts,title){const n=NOTE[k];if(!n)return;const u=me();DB.notifs.unshift({id:uid('n'),ts:ts||Date.now(),rid:r.id,by:u?u.id:'',title:title||n[0],text:r.no+' · '+TO(r).name,to:n[1],read:false,ch:chans()});if(DB.notifs.length>300)DB.notifs.length=300}
+const chans=()=>[DB.ch.inapp&&'In-app',DB.ch.email&&'Email',DB.ch.teams&&'Teams',DB.ch.sms&&'SMS'].filter(Boolean);
+function notifFor(){const u=me();if(!u)return[];return DB.notifs.filter(n=>{const r=DB.reqs.find(x=>x.id===n.rid);if(!r)return false;
+  if(isLead(u))return n.to.includes('hws')||n.to.includes('lead');if(u.role==='hws')return n.to.includes('hws');
+  if(u.role==='user')return n.to.includes('user')&&userSees(u,r);if(u.role==='vendor')return n.to.includes('vendor')&&r.vendor===u.vendor;
+  if(u.role==='driver')return n.to.includes('driver')&&r.driver===u.driver;return false})}
+
+/* ================= history ================= */
+function evLabel(r,k){return{created:'Request created',validated:'Request validated, sent to '+(r.vendor?V(r.vendor).name:'vendor'),assigned:'Driver assigned: '+(r.driver&&DR(r.driver)?DR(r.driver).name:''),collected:'Collection proof uploaded',transit:'Delivery started, in transit',delivered:'Delivery proof and signature uploaded',decided:r.rejected?'Item rejected':'Item accepted',vconfirm:'Vendor confirmed completion',completed:'HWS validated, job closed'}[k]}
+const EROLE={created:'Regional User',validated:'HWS',assigned:'Vendor Admin',collected:'Driver',transit:'Driver',delivered:'Driver',decided:'Regional User',vconfirm:'Vendor Admin',completed:'HWS'};
+function hist(r){const a=[];EV.forEach(k=>{if(r.t[k])a.push({ts:r.t[k],user:r.who[k]||'',role:EROLE[k],action:evLabel(r,k),no:r.no,remarks:r.notes[k]||''})});r.log.forEach(l=>a.push({ts:l.ts,user:l.user,role:l.role,action:l.action,no:r.no,remarks:l.remarks||''}));return a.sort((x,y)=>x.ts-y.ts)}
+const allEvents=()=>DB.reqs.flatMap(hist).concat(DB.audit).sort((a,b)=>b.ts-a.ts);
+
+/* ================= icons & charts ================= */
+const IC={dash:'<path d="M4 13h6V4H4zM14 20h6V4h-6zM4 20h6v-3H4z"/>',ops:'<path d="M4 6h16M4 12h10M4 18h6"/><circle cx="18" cy="16" r="3"/>',map:'<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/>',cost:'<circle cx="12" cy="12" r="8"/><path d="M14.5 9.2c-.5-.8-1.4-1.2-2.5-1.2-1.5 0-2.5.8-2.5 1.9 0 2.6 5 1.4 5 4.1 0 1.1-1.1 2-2.5 2-1.2 0-2.2-.5-2.6-1.4M12 6.5V8M12 16v1.5"/>',
+ list:'<path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/>',plus:'<path d="M12 5v14M5 12h14"/>',clock:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',file:'<path d="M7 3h7l4 4v14H7zM14 3v4h4"/>',truck:'<path d="M3 6h11v10H3zM14 9h4l3 3v4h-7"/><circle cx="7" cy="17" r="1.8"/><circle cx="17" cy="17" r="1.8"/>',chart:'<path d="M5 20V10M12 20V4M19 20v-7"/>',shield:'<path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/>',users:'<circle cx="9" cy="9" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5M16 6a3 3 0 010 6M18 15c2 .6 3 2 3 5"/>',bell:'<path d="M6 16V11a6 6 0 0112 0v5l2 2H4zM10 21h4"/>',
+ vend:'<path d="M3 21V9l9-5 9 5v12M8 21v-6h8v6"/>',menu:'<path d="M4 7h16M4 12h16M4 17h16"/>',dl:'<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',search:'<circle cx="11" cy="11" r="6"/><path d="M20 20l-4-4"/>',out:'<path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/>',box:'<path d="M3 7l9-4 9 4-9 4zM3 7v10l9 4 9-4V7M12 11v10"/>'};
+const ico=(n,sz)=>'<svg viewBox="0 0 24 24" width="'+(sz||18)+'" height="'+(sz||18)+'" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+IC[n]+'</svg>';
+function niceMax(v){if(v<=5)return 5;const p=Math.pow(10,Math.floor(Math.log10(v)));const n=v/p;const m=n<=1.2?1.2:n<=1.6?1.6:n<=2?2:n<=2.5?2.5:n<=3?3:n<=4?4:n<=5?5:n<=6?6:n<=8?8:10;return m*p}
+function line(labels,vals,o){o=o||{};const W=440,Hh=180,l=46,rr=16,t=18,b=26;const top=Math.max.apply(null,vals.concat([1]));const mn=o.min!=null?o.min:0,mx=o.max!=null?o.max:niceMax(top);
+  const x=i=>l+(W-l-rr)*(labels.length<2?0:i/(labels.length-1)),y=v=>t+(Hh-t-b)*(1-(v-mn)/(mx-mn));const fm=o.fmt||(v=>Math.round(v)+(o.unit||''));
+  let g='';for(let k=0;k<=4;k++){const v=mn+(mx-mn)*k/4;g+='<line class="gl" x1="'+l+'" x2="'+(W-rr)+'" y1="'+y(v)+'" y2="'+y(v)+'"/><text class="ax" x="'+(l-6)+'" y="'+(y(v)+4)+'" text-anchor="end">'+fm(v)+'</text>'}
+  const cl=v=>Math.max(mn,Math.min(mx,v));const pts=vals.map((v,i)=>x(i)+','+y(cl(v)));const lx=x(vals.length-1),ly=y(cl(vals[vals.length-1]));
+  const xl=labels.map((s,i)=>'<text class="ax" x="'+x(i)+'" y="'+(Hh-8)+'" text-anchor="middle">'+s+'</text>').join('');
+  return'<svg class="chart" viewBox="0 0 '+W+' '+Hh+'" role="img" aria-label="'+esc(o.label||'Trend')+'">'+g+'<path class="ar" d="M'+pts.join(' L')+' L'+lx+','+y(mn)+' L'+x(0)+','+y(mn)+'Z"/><polyline class="ln" points="'+pts.join(' ')+'"/><circle class="dot" cx="'+lx+'" cy="'+ly+'" r="5"/><text class="vl" x="'+lx+'" y="'+(ly-10)+'" text-anchor="end">'+fm(vals[vals.length-1])+'</text>'+xl+'</svg>'}
+function vbar(labels,vals,o){o=o||{};const W=440,Hh=180,l=46,rr=10,t=20,b=26;const mx=niceMax(Math.max.apply(null,vals.concat([1]))*1.1);const bw=(W-l-rr)/labels.length;const y=v=>t+(Hh-t-b)*(1-v/mx);const fm=o.fmt||(v=>Math.round(v));
+  let g='';for(let k=0;k<=4;k++){const v=mx*k/4;g+='<line class="gl" x1="'+l+'" x2="'+(W-rr)+'" y1="'+y(v)+'" y2="'+y(v)+'"/><text class="ax" x="'+(l-6)+'" y="'+(y(v)+4)+'" text-anchor="end">'+fm(v)+'</text>'}
+  const bars=vals.map((v,i)=>{const x=l+bw*i+bw*.18;return'<rect class="bar-a" x="'+x+'" y="'+y(v)+'" width="'+bw*.64+'" height="'+Math.max(0,y(0)-y(v))+'" rx="2"/>'+(labels.length<=8&&v?'<text class="vl" x="'+(x+bw*.32)+'" y="'+(y(v)-5)+'" text-anchor="middle">'+(o.lbl?o.lbl(v):fm(v))+'</text>':'')+((labels.length<=8||i%2===0)?'<text class="ax" x="'+(x+bw*.32)+'" y="'+(Hh-8)+'" text-anchor="middle">'+labels[i]+'</text>':'')}).join('');
+  return'<svg class="chart" viewBox="0 0 '+W+' '+Hh+'" role="img" aria-label="'+esc(o.label||'Bar chart')+'">'+g+bars+'</svg>'}
+function hbar(items,o){o=o||{};const mx=Math.max(1,...items.map(i=>i.v));const f=o.fmt||(v=>v+(o.unit||''));return'<div class="hb">'+items.map(i=>'<span class="lb" title="'+esc(i.l)+'">'+esc(i.l)+'</span><span class="tr"><i style="width:'+Math.max(1.5,i.v/mx*100)+'%;'+(i.c?'background:'+i.c:'')+'"></i></span><span class="n">'+f(i.v)+'</span>').join('')+'</div>'}
+const hc=v=>v==null?'hn':v>=90?'hg':v>=75?'ha':'hr';
+function heat(rows,cols,fn){let h='<div class="tw"><div class="heat" style="grid-template-columns:minmax(96px,1.3fr) repeat('+cols.length+',minmax(58px,1fr))"><div class="h rl"></div>'+cols.map(c=>'<div class="h">'+c+'</div>').join('');rows.forEach(r=>{h+='<div class="rl">'+r+'</div>';cols.forEach(c=>{const v=fn(r,c);h+='<div class="'+hc(v)+'">'+(v==null?'n/a':v+'%')+'</div>'})});return h+'</div></div>'}
+const kpi=(l,v,s,t)=>'<div class="kpi '+(t||'')+'"><div class="l">'+l+'</div><div class="v" title="'+esc(String(v).replace(/<[^>]+>/g,''))+'">'+v+'</div><div class="s">'+(s||'&nbsp;')+'</div></div>';
+const panel=(t,sub,body,flush,extra)=>'<section class="panel"><div class="hd"><h2>'+t+'</h2>'+(extra||'')+(sub?'<span>'+sub+'</span>':'')+'</div><div class="bd'+(flush?' flush':'')+'">'+body+'</div></section>';
+const legend='<div class="legend"><span><span class="sla green">Within SLA</span></span><span><span class="sla amber">Near breach (75%+ of target)</span></span><span><span class="sla red">Breached</span></span></div>';
+const periodCtl=()=>'<div class="seg" role="group" aria-label="Period">'+['mtd','30','90','180','all'].map(k=>'<button data-act="period" data-k="'+k+'" aria-pressed="'+(S.period===k)+'">'+({mtd:'MTD','30':'30d','90':'90d','180':'180d',all:'All'}[k])+'</button>').join('')+'</div>';
+const expBtns=key=>'<div class="exp"><button class="btn sm" data-act="exp" data-k="'+key+'" data-fmt="xlsx">'+ico('dl',15)+'Excel</button><button class="btn sm" data-act="exp" data-k="'+key+'" data-fmt="csv">CSV</button><button class="btn sm" data-act="exp" data-k="'+key+'" data-fmt="pdf">PDF</button></div>';
+const head=(crumb,title,sub,right)=>'<div class="ph"><div>'+(crumb?'<div class="crumb">'+crumb+'</div>':'')+'<h1>'+title+'</h1>'+(sub?'<p>'+sub+'</p>':'')+'</div>'+(right?'<div class="row">'+right+'</div>':'')+'</div>';
+
+/* ================= shared blocks ================= */
+function metPct(rs,key){const ms=rs.map(r=>slaOf(r).ms.find(m=>m.k===key)).filter(m=>m&&m.done);return ms.length?pct(ms.filter(m=>m.st==='met').length,ms.length):null}
+const compliance=rs=>rs.length?pct(rs.filter(r=>slaOf(r).c!=='red').length,rs.length):0;
+const slaCls=v=>v>=90?'green':v>=75?'amber':'red';
+function attention(rs,n){const a=rs.filter(r=>isOpen(r)&&slaOf(r).c==='red').sort((x,y)=>x.t.created-y.t.created).slice(0,n);
+  if(!a.length)return'<div class="empty">No open job is past its SLA.</div>';
+  return'<div class="tw"><table class="t"><tbody>'+a.map(r=>'<tr class="rw" data-act="open" data-id="'+r.id+'"><td><span class="mono">'+r.no+'</span><div class="hint">'+esc(TO(r).name)+'</div></td><td>'+pill(statusOf(r))+'</td><td class="hide-m">'+esc(r.vendor?V(r.vendor).name:'Unassigned')+'</td><td>'+slaPill(r)+'</td></tr>').join('')+'</tbody></table></div>'}
+function listTable(a){return'<div class="tw"><table class="t"><tbody>'+a.map(r=>'<tr class="rw" data-act="open" data-id="'+r.id+'"><td><span class="mono">'+r.no+'</span><div class="hint">'+esc(r.item)+' × '+r.qty+'</div></td><td>'+pill(statusOf(r))+'</td><td>'+slaPill(r)+'</td></tr>').join('')+'</tbody></table></div>'}
+
+/* ================= HWS dashboards ================= */
+function viewOverview(){const all=scope(),rs=inPeriod(all);
+  const tot=rs.length,done=rs.filter(r=>statusOf(r)==='Completed').length,rej=rs.filter(r=>r.rejected&&r.t.decided).length;
+  const prog=rs.filter(isOpen).length,del=all.filter(r=>isOpen(r)&&slaOf(r).c==='red').length,cost=sum(rs.map(costTot));
+  const mo=months(6),lab=mo.map(m=>m.l);
+  let h=head('Dashboards','Executive overview','Spare-part deliveries across all states and vendors · '+PLBL[S.period],periodCtl());
+  h+=jobBoard(all);
+  h+='<div class="kpis">'+kpi('Total requests',tot,'Created in period','acc')+kpi('Completed',done,pct(done,tot)+'% of requests','ok')+kpi('In progress',prog,'Still open')+kpi('Delayed jobs',del,'Open and past SLA now',del?'bad':'')+kpi('Rejected deliveries',rej,pct(rej,tot)+'% of requests',rej?'warn':'')+kpi('SLA compliance',compliance(rs)+'%','Target 90%',compliance(rs)>=90?'ok':'warn')+kpi('Delivery cost',rmk(cost),'Actual + estimated')+'</div>';
+  h+='<div class="grid g2">'+panel('Monthly requests and deliveries','last 6 months',twoSeries(lab,mo.map(m=>all.filter(r=>inMonth(r.t.created,m)).length),mo.map(m=>all.filter(r=>inMonth(r.t.delivered,m)).length)))+panel('Needs attention','open jobs past SLA',attention(all,6),true)+'</div>';
+  h+='<div class="grid">'+panel('SLA performance trend','% of jobs within SLA',line(lab,mo.map(m=>compliance(all.filter(r=>inMonth(r.t.created,m)))),{min:50,max:100,unit:'%',label:'SLA trend'}))+panel('Requests by region','',hbar(REGIONS.map(g=>({l:g,v:rs.filter(r=>ST(r.st).region===g).length}))))+'</div>';
+  h+='<div class="grid">'+panel('Requests by vendor','',hbar(DB.vendors.map(v=>({l:v.name,v:rs.filter(r=>r.vendor===v.id).length})).concat([{l:'Not yet assigned',v:rs.filter(r=>!r.vendor).length,c:'var(--muted)'}])))+panel('Requests by status','',hbar(STATUSES.map(s=>({l:s,v:rs.filter(r=>statusOf(r)===s).length,c:SC[s]}))))+'</div><p class="hint">* Current month to date.</p>';
+  return h}
+function twoSeries(lab,a,b){const W=520,Hh=200,l=40,rr=10,t=18,bt=26;const mx=niceMax(Math.max(...a,...b,1)*1.1);const bw=(W-l-rr)/lab.length;const y=v=>t+(Hh-t-bt)*(1-v/mx);
+  let g='';for(let k=0;k<=4;k++){const v=mx*k/4;g+='<line class="gl" x1="'+l+'" x2="'+(W-rr)+'" y1="'+y(v)+'" y2="'+y(v)+'"/><text class="ax" x="'+(l-6)+'" y="'+(y(v)+4)+'" text-anchor="end">'+Math.round(v)+'</text>'}
+  lab.forEach((s,i)=>{const x=l+bw*i+bw*.16,w=bw*.32;g+='<rect class="bar-a" x="'+x+'" y="'+y(a[i])+'" width="'+w+'" height="'+(y(0)-y(a[i]))+'" rx="2"><title>'+s+': '+a[i]+' requested</title></rect><rect class="bar-b" x="'+(x+w+2)+'" y="'+y(b[i])+'" width="'+w+'" height="'+(y(0)-y(b[i]))+'" rx="2"><title>'+s+': '+b[i]+' delivered</title></rect><text class="ax" x="'+(x+w)+'" y="'+(Hh-8)+'" text-anchor="middle">'+s+'</text>'});
+  return'<div class="legend" style="margin-bottom:6px"><span><span class="sw" style="background:var(--c1)"></span>Requested</span><span><span class="sw" style="background:var(--c2)"></span>Delivered</span></div><svg class="chart" viewBox="0 0 '+W+' '+Hh+'" role="img" aria-label="Monthly requests and deliveries">'+g+'</svg>'}
+function viewOps(){const rs=scope();
+  const open=rs.filter(isOpen),asg=rs.filter(r=>ACTIVE.includes(statusOf(r))),pc=rs.filter(r=>statusOf(r)==='Driver Assigned'),pa=rs.filter(r=>statusOf(r)==='Delivered'),od=open.filter(r=>slaOf(r).c==='red'),pv=rs.filter(r=>['Request Created','Pending Vendor Assignment'].includes(statusOf(r)));
+  const bk=[['< 4 h',0,4],['4 to 12 h',4,12],['12 to 24 h',12,24],['1 to 2 days',24,48],['> 2 days',48,1e9]];
+  const ag=bk.map(b=>({l:b[0],v:open.filter(r=>{const h=(Date.now()-r.t.created)/H;return h>=b[1]&&h<b[2]}).length,c:b[1]>=24?'var(--warn)':''}));
+  let h=head('Dashboards','HWS operations','What needs action now. Live, not filtered by period.');
+  h+='<div class="kpis">'+kpi('Open requests',open.length,'Not yet closed','acc')+kpi('Awaiting assignment',pv.length,'HWS or vendor to act',pv.length?'warn':'')+kpi('Assigned requests',asg.length,'With a driver')+kpi('Pending collection',pc.length,'At the warehouse')+kpi('Pending acceptance',pa.length,'Waiting for the store',pa.length>3?'warn':'')+kpi('Overdue jobs',od.length,'Past SLA',od.length?'bad':'')+'</div>';
+  h+='<div class="grid">'+panel('Delivery aging','open requests by age',hbar(ag))+panel('Jobs to chase','past SLA',attention(rs,6),true)+'</div>';
+  h+='<div class="grid">'+panel('SLA heatmap','% of finished stages within target',heat(REGIONS,['Response','Collection','Delivery','End-to-end'],(g,c)=>metPct(rs.filter(r=>ST(r.st).region===g),MET.find(m=>m[1]===c)[0]))+'<p class="hint">90%+ green, 75 to 89% amber, below 75% red.</p>')+panel('Region performance','',regionTable(rs),true)+'</div>';
+  return h}
+function regionTable(rs){return'<div class="tw"><table class="t"><thead><tr><th>Region</th><th class="num">Jobs</th><th class="num">SLA %</th><th class="num">Avg end-to-end</th><th class="num">Rejected</th></tr></thead><tbody>'+REGIONS.map(g=>{const a=rs.filter(r=>ST(r.st).region===g);const e=a.filter(r=>r.t.completed).map(r=>(r.t.completed-r.t.created)/H);return'<tr><td>'+g+'</td><td class="num">'+a.length+'</td><td class="num"><span class="sla '+slaCls(compliance(a))+'">'+compliance(a)+'%</span></td><td class="num">'+dur(e.length?avg(e):null)+'</td><td class="num">'+a.filter(r=>r.rejected&&r.t.decided).length+'</td></tr>'}).join('')+'</tbody></table></div>'}
+
+/* ---------- state map ---------- */
+const PEN=[[100.13,6.45],[100.17,6.69],[100.6,6.45],[101.1,6.25],[101.3,5.8],[101.6,5.85],[101.85,5.75],[102.1,6.22],[102.3,6.2],[102.6,5.9],[103.1,5.4],[103.45,4.8],[103.45,4.25],[103.35,3.8],[103.45,3.3],[103.6,2.7],[103.85,2.45],[104.15,2.0],[104.27,1.38],[103.95,1.42],[103.6,1.33],[103.51,1.27],[103.4,1.5],[102.9,1.85],[102.25,2.2],[101.85,2.5],[101.3,2.95],[101.0,3.6],[100.7,4.2],[100.45,4.9],[100.35,5.35],[100.37,5.9],[100.25,6.35]];
+const BOR=[[109.64,2.08],[110.1,1.72],[110.55,1.72],[111.0,1.62],[111.25,2.15],[111.45,2.55],[111.85,2.85],[112.6,3.0],[113.05,3.2],[113.5,3.75],[113.95,4.4],[114.1,4.6],[114.6,4.9],[115.05,5.0],[115.35,4.9],[115.55,5.15],[115.6,5.55],[115.9,5.8],[116.07,6.0],[116.4,6.5],[116.75,6.95],[117.0,6.85],[117.3,6.6],[117.6,6.5],[117.75,6.1],[118.05,5.85],[118.3,5.85],[118.6,5.6],[119.25,5.35],[118.7,4.95],[118.35,5.0],[118.62,4.48],[118.1,4.3],[117.88,4.2],[117.6,4.17],[117.2,4.35],[116.0,4.35],[115.6,4.15],[115.55,3.5],[115.2,2.9],[114.85,2.3],[114.6,1.5],[113.9,1.4],[113.15,1.25],[112.5,1.55],[111.9,1.05],[111.2,1.0],[110.6,0.95],[110.0,1.3],[109.65,1.6]];
+const BRN=[[114.1,4.6],[114.6,4.9],[115.05,5.0],[115.35,4.9],[115.15,4.6],[115.1,4.15],[114.85,4.0],[114.5,4.15],[114.25,4.45]];
+const MSC=62;
+function prj(lng,lat){const x=lng<106?20+(lng-99.6)*MSC:20+4.9*MSC+60+(lng-109.4)*MSC;return[+x.toFixed(1),+(14+(7.3-lat)*MSC).toFixed(1)]}
+const DISP={SGR:[101.25,3.5],NSN:[102.1,2.75]};
+const LPOS={SGR:['l',-2],KUL:['r',-8],PJY:['l',10],NSN:['r',8],MLK:['l',4],PNG:['l',4],KDH:['l',4],PLS:['l',4],PRK:['l',4],LBN:['l',4]};
+const poly=(pts,cls)=>'<polygon class="'+cls+'" points="'+pts.map(p=>prj(p[0],p[1]).join(',')).join(' ')+'"/>';
+function stateRows(rs){return STATES.map(s=>{const a=rs.filter(r=>r.st===s.id),open=a.filter(isOpen),done=a.filter(r=>r.t.completed),dl=a.filter(r=>r.t.delivered&&r.t.collected);
+  return{s,a,n:a.length,open:open.length,done:done.length,od:open.filter(r=>slaOf(r).c==='red').length,sla:a.length?compliance(a):null,cost:sum(a.map(costTot)),avgDel:dl.length?avg(dl.map(r=>(r.t.delivered-r.t.collected)/H)):null}})}
+function mapSVG(rows){const m=S.mapM,val=x=>m==='open'?x.open:m==='cost'?x.cost:x.n;const mx=Math.max(1,...rows.map(val));
+  const W=Math.ceil(prj(119.6,0)[0]+20),Hh=Math.ceil(prj(0,0.8)[1]+10);
+  let g=poly(PEN,'land')+poly(BOR,'land')+poly(BRN,'brn');
+  const bx=prj(105.2,0)[0]+30;g+='<line class="divl" x1="'+bx+'" y1="20" x2="'+bx+'" y2="'+(Hh-20)+'"/>';
+  const bl=prj(114.62,4.45);g+='<text class="mlb2" x="'+bl[0]+'" y="'+bl[1]+'" text-anchor="middle">Brunei</text>';
+  g+='<text class="mlb2" x="'+prj(99.8,1.0)[0]+'" y="'+prj(99.8,1.0)[1]+'">Peninsular Malaysia</text><text class="mlb2" x="'+prj(109.6,7.0)[0]+'" y="'+prj(109.6,7.0)[1]+'">East Malaysia (moved closer, same scale)</text>';
+  DB.bases.filter(b=>b.type!=='Store'&&b.type!=='Customer site'&&b.active!==false).forEach(b=>{const wh=prj(b.lng,b.lat);g+='<rect class="wh" x="'+(wh[0]-4)+'" y="'+(wh[1]-4)+'" width="8" height="8" transform="rotate(45 '+wh[0]+' '+wh[1]+')"><title>'+esc(b.name)+'</title></rect>'});
+  const rad=x=>x.n?6+16*Math.sqrt(val(x)/mx):4;
+  rows.slice().sort((a,b)=>val(b)-val(a)).forEach(x=>{const c=x.sla==null?'n':x.sla>=90?'g':x.sla>=75?'a':'r';const p=DISP[x.s.id]||[x.s.lng,x.s.lat];const q=prj(p[0],p[1]);
+    g+='<circle class="bub '+c+(S.mapSel===x.s.id?' on':'')+'" cx="'+q[0]+'" cy="'+q[1]+'" r="'+rad(x).toFixed(1)+'" data-act="mapsel" data-k="'+x.s.id+'" tabindex="0" role="button" aria-label="'+esc(x.s.name)+': '+x.n+' requests"><title>'+esc(x.s.name)+' · '+x.n+' requests · '+x.open+' open · SLA '+(x.sla==null?'n/a':x.sla+'%')+' · '+rm(x.cost)+'</title></circle>'});
+  rows.forEach(x=>{const p=DISP[x.s.id]||[x.s.lng,x.s.lat];const q=prj(p[0],p[1]);const r=rad(x);const lp=LPOS[x.s.id]||['r',4];const left=lp[0]==='l';const lbl=x.s.id+' '+(m==='cost'?rmk(x.cost).replace('RM ',''):m==='sla'?(x.sla==null?'–':x.sla+'%'):m==='open'?x.open:x.n);
+    const dy=lp[1];
+    g+='<text class="mlb" x="'+(left?q[0]-r-4:q[0]+r+4)+'" y="'+(q[1]+dy)+'" text-anchor="'+(left?'end':'start')+'">'+lbl+'</text>'});
+  return'<svg class="map" viewBox="0 0 '+W+' '+Hh+'" role="img" aria-label="Map of Malaysia showing requests by state">'+g+'</svg>'}
+function viewMap(){const rs=inPeriod(scope()),rows=stateRows(rs);
+  const met=[['req','Requests'],['open','Open jobs'],['sla','SLA %'],['cost','Cost']];
+  let h=head('Dashboards','State map','Request records by state · '+PLBL[S.period],periodCtl());
+  const top=rows.slice().sort((a,b)=>b.n-a.n)[0],worst=rows.filter(x=>x.n>=3).sort((a,b)=>a.sla-b.sla)[0];
+  h+='<div class="kpis">'+kpi('States served',rows.filter(x=>x.n).length+' / 16','With at least one request','acc')+kpi('Busiest state',top.n?top.s.name:'—',top.n+' requests')+kpi('Lowest SLA',worst?worst.s.name:'—',worst?worst.sla+'% within SLA':'Not enough data',worst&&worst.sla<90?'warn':'')+kpi('East Malaysia share',pct(sum(rows.filter(x=>x.s.region==='East Malaysia').map(x=>x.n)),rs.length)+'%','of requests, by air freight')+'</div>';
+  const sel=S.mapSel?rows.find(x=>x.s.id===S.mapSel):null;
+  h+='<div class="grid g2"><section class="panel"><div class="hd"><h2>Requests by state</h2><div class="seg" role="group" aria-label="Map measure">'+met.map(x=>'<button data-act="mapm" data-k="'+x[0]+'" aria-pressed="'+(S.mapM===x[0])+'">'+x[1]+'</button>').join('')+'</div></div><div class="bd"><div class="tw"><div class="mapw">'+mapSVG(rows)+'</div></div><div class="legend" style="margin-top:10px"><span>Bubble size: '+(S.mapM==='sla'?'requests':met.find(x=>x[0]===S.mapM)[1].toLowerCase())+'</span><span><span class="sw" style="background:var(--ok)"></span>SLA 90%+</span><span><span class="sw" style="background:var(--warn)"></span>75 to 89%</span><span><span class="sw" style="background:var(--bad)"></span>Below 75%</span><span>◆ Warehouse or hub</span></div><p class="hint" style="margin:6px 0 0">Simplified outline. Select a state to see its records.</p></div></section>';
+  h+=sel?statePanel(sel):panel('State detail','','<div class="empty">Select a state on the map or in the table below.</div>');
+  h+='</div>';
+  h+=panel('State summary',PLBL[S.period],'<div class="tw"><table class="t"><thead><tr><th>State</th><th class="hide-m">Region</th><th class="hide-m">Zone</th><th class="num">Requests</th><th class="num">Open</th><th class="num">Overdue</th><th class="num hide-m">Completed</th><th class="num">SLA %</th><th class="num hide-m">Avg delivery</th><th class="num">Cost</th></tr></thead><tbody>'+rows.slice().sort((a,b)=>b.n-a.n).map(x=>'<tr class="rw'+(S.mapSel===x.s.id?' sel':'')+'" data-act="mapsel" data-k="'+x.s.id+'"><td>'+x.s.name+'</td><td class="hide-m">'+x.s.region+'</td><td class="hide-m">'+ZONE(x.s)+'</td><td class="num">'+x.n+'</td><td class="num">'+x.open+'</td><td class="num">'+(x.od?'<span class="sla red">'+x.od+'</span>':'0')+'</td><td class="num hide-m">'+x.done+'</td><td class="num">'+(x.sla==null?'—':'<span class="sla '+slaCls(x.sla)+'">'+x.sla+'%</span>')+'</td><td class="num hide-m">'+dur(x.avgDel)+'</td><td class="num">'+rm(x.cost)+'</td></tr>').join('')+'</tbody><tfoot><tr><td>Total</td><td class="hide-m"></td><td class="hide-m"></td><td class="num">'+rs.length+'</td><td class="num">'+sum(rows.map(x=>x.open))+'</td><td class="num">'+sum(rows.map(x=>x.od))+'</td><td class="num hide-m">'+sum(rows.map(x=>x.done))+'</td><td class="num">'+compliance(rs)+'%</td><td class="hide-m"></td><td class="num">'+rm(sum(rows.map(x=>x.cost)))+'</td></tr></tfoot></table></div>',true,expBtns('states'));
+  return h}
+function statePanel(x){const a=x.a.slice(0,6),bs=DB.bases.filter(b=>b.state===x.s.id&&b.active!==false),st=bs.find(b=>b.type==='Store'),W=B('B00');
+  return panel(x.s.name,x.s.region+' · '+ZN[ZONE(x.s)],'<dl class="kv" style="margin-bottom:12px"><div><dt>Bases in this state</dt><dd>'+(bs.length?bs.map(b=>esc(b.name)).join('<br>'):'None registered')+'</dd></div><div><dt>From Central Warehouse</dt><dd>'+(st?(crossSea(W,st)?'Air freight + 18 km':kmBetween(W,st)+' km by road'):'—')+'</dd></div><div><dt>Requests</dt><dd>'+x.n+' ('+x.open+' open)</dd></div><div><dt>SLA</dt><dd>'+(x.sla==null?'—':x.sla+'%')+'</dd></div><div><dt>Avg delivery leg</dt><dd>'+dur(x.avgDel)+'</dd></div><div><dt>Cost</dt><dd>'+rm(x.cost)+'</dd></div></dl>'+(a.length?listTable(a):'<div class="empty">No requests in this period.</div>')+'<div class="row" style="margin-top:10px"><button class="btn sm pri" data-act="stateReq" data-k="'+x.s.id+'">View all '+x.n+' requests</button><button class="btn sm" data-act="mapsel" data-k="">Clear</button></div>')}
+/* ---------- costing ---------- */
+function viewCost(){const rs=inPeriod(scope()).filter(r=>r.vendor),cs=rs.map(r=>({r,c:costView(r)}));
+  const tot=sum(cs.map(x=>x.c.total)),act=sum(cs.filter(x=>x.c.final).map(x=>x.c.total)),est=tot-act,n=cs.length;
+  const pen=cs.filter(x=>ZONE(ST(x.r.st))!=='C'),cpk=sum(pen.map(x=>x.c.total))/Math.max(1,sum(pen.map(x=>x.c.km)));
+  const red=sum(cs.map(x=>x.c.red)),sur=sum(cs.map(x=>x.c.sur));
+  const mo=months(6);const all=scope().filter(r=>r.vendor);
+  let h=head('Dashboards','Costing','Delivery cost per job and in total · '+PLBL[S.period],periodCtl()+'<button class="btn" data-act="nav" data-v="admin" data-k="rates">Rate card</button>');
+  h+='<div class="kpis">'+kpi('Total cost',rm(tot),n+' jobs with a vendor','acc')+kpi('Actual (closed jobs)',rm(act),cs.filter(x=>x.c.final).length+' jobs','ok')+kpi('Estimated (open jobs)',rm(est),cs.filter(x=>!x.c.final).length+' jobs at current rates')+kpi('Average per job',rm(n?tot/n:0),'All zones')+kpi('Cost per km',rm(cpk,2),'Peninsular road jobs')+kpi('Re-dispatch + surcharge',rm(red+sur),'Priority and repeat legs',red?'warn':'')+'</div>';
+  h+='<div class="grid">'+panel('Monthly cost','last 6 months, by request date',vbar(mo.map(m=>m.l),mo.map(m=>Math.round(sum(all.filter(r=>inMonth(r.t.created,m)).map(costTot)))),{label:'Monthly cost',fmt:v=>v>=1000?(v/1000).toFixed(v>=1e4?0:1)+'k':String(Math.round(v)),lbl:v=>(v/1000).toFixed(1)+'k'}))+panel('Cost by vendor',PLBL[S.period],hbar(DB.vendors.map(v=>({l:v.name,v:Math.round(sum(cs.filter(x=>x.r.vendor===v.id).map(x=>x.c.total)))})),{fmt:rmk}))+'</div>';
+  const comp=[['Route rate / base fee','base','var(--c1)'],['Distance','dist','var(--c2)'],['Toll','toll','var(--c5)'],['Air freight','air','var(--c4)'],['Priority surcharge','sur','var(--c3)'],['Re-dispatch','red','var(--bad)']].map(c=>({l:c[0],v:sum(cs.map(x=>x.c[c[1]])),c:c[2]}));
+  h+='<div class="grid">'+panel('Cost breakdown','share of total','<div class="stack" style="margin-bottom:12px">'+comp.map(c=>'<i style="width:'+(tot?c.v/tot*100:0)+'%;background:'+c.c+'" title="'+c.l+'"></i>').join('')+'</div>'+hbar(comp.map(c=>({l:c.l,v:Math.round(c.v),c:c.c})),{fmt:rmk}))+panel('Cost by state','top 8',hbar(stateRows(rs).sort((a,b)=>b.cost-a.cost).slice(0,8).map(x=>({l:x.s.name,v:Math.round(x.cost)})),{fmt:rmk}))+'</div>';
+  const rows=cs.slice().sort((a,b)=>b.r.t.created-a.r.t.created);
+  h+=panel('Cost per job',rows.length+' jobs','<div class="tw"><table class="t"><thead><tr><th>Request</th><th>State</th><th class="hide-m">Vendor</th><th class="hide-m">Priority</th><th class="num">km</th><th class="num hide-m">Route / base</th><th class="num hide-m">Distance</th><th class="num hide-m">Toll</th><th class="num hide-m">Air</th><th class="num hide-m">Extra</th><th class="num">Total</th><th>Basis</th></tr></thead><tbody>'+rows.slice(0,S.costLim).map(x=>'<tr class="rw" data-act="open" data-id="'+x.r.id+'"><td class="mono">'+x.r.no+'</td><td>'+ST(x.r.st).name+'</td><td class="hide-m">'+esc(V(x.r.vendor).name)+'</td><td class="hide-m">'+x.r.prio+'</td><td class="num">'+x.c.km+'</td><td class="num hide-m">'+x.c.base.toFixed(2)+'</td><td class="num hide-m">'+x.c.dist.toFixed(2)+'</td><td class="num hide-m">'+x.c.toll.toFixed(2)+'</td><td class="num hide-m">'+x.c.air.toFixed(2)+'</td><td class="num hide-m">'+(x.c.sur+x.c.red).toFixed(2)+'</td><td class="num"><b>'+rm(x.c.total,2)+'</b></td><td>'+(x.c.final?'<span class="tag">Actual</span>':'<span class="tag acc">Estimate</span>')+'<div class="hint">'+x.c.basis+'</div></td></tr>').join('')+'</tbody><tfoot><tr><td>Total</td><td>'+rows.length+' jobs</td><td class="hide-m"></td><td class="hide-m"></td><td class="num">'+sum(rows.map(x=>x.c.km)).toLocaleString('en-MY')+'</td><td class="num hide-m">'+sum(rows.map(x=>x.c.base)).toFixed(2)+'</td><td class="num hide-m">'+sum(rows.map(x=>x.c.dist)).toFixed(2)+'</td><td class="num hide-m">'+sum(rows.map(x=>x.c.toll)).toFixed(2)+'</td><td class="num hide-m">'+sum(rows.map(x=>x.c.air)).toFixed(2)+'</td><td class="num hide-m">'+sum(rows.map(x=>x.c.sur+x.c.red)).toFixed(2)+'</td><td class="num">'+rm(tot,2)+'</td><td></td></tr></tfoot></table></div>'+(rows.length>S.costLim?'<div style="padding:10px 16px"><button class="btn sm" data-act="costmore">Show 20 more ('+(rows.length-S.costLim)+' left)</button></div>':''),true,expBtns('cost'));
+  h+='<p class="hint">Each job uses the route rate for its collection point, destination and vendor when one is registered. Otherwise it uses the vendor formula: base fee + distance × rate + toll + air freight (East Malaysia). Priority surcharge and re-dispatch legs are added on top. Extra = surcharge + re-dispatch. Closed jobs keep the cost they closed with; open jobs use the current rate card.</p>';
+  return h}
+
+/* ---------- vendor performance ---------- */
+function driverStats(d,days){const since=Date.now()-days*D;const a=DB.reqs.filter(r=>r.driver===d.id&&r.t.assigned>=since);const dl=a.filter(r=>r.t.delivered),dec=a.filter(r=>r.t.decided),ok=dec.filter(r=>!r.rejected);const dh=dl.map(r=>(r.t.delivered-r.t.collected)/H);
+  return{asg:a.length,done:dl.length,succ:dec.length?pct(ok.length,dec.length):null,avgH:dh.length?avg(dh):null,active:DB.reqs.filter(r=>r.driver===d.id&&ACTIVE.includes(statusOf(r))).length,util:Math.min(100,pct(a.length,14)),sla:a.length?compliance(a):null}}
+function viewVendor(){const u=me();const vid=u.role==='vendor'?u.vendor:S.vsel;
+  const vrs=DB.reqs.filter(r=>!vid||r.vendor===vid),ds=DB.drivers.filter(d=>!vid||d.vendor===vid),st=ds.map(d=>({d,s:driverStats(d,30)}));
+  const act=st.filter(x=>x.s.active>0).length,asg=sum(st.map(x=>x.s.asg)),dn=sum(st.map(x=>x.s.done));
+  const dec=vrs.filter(r=>r.t.decided&&r.t.decided>Date.now()-30*D);const r30=vrs.filter(r=>r.t.created>Date.now()-30*D);
+  const dlh=vrs.filter(r=>r.t.delivered>Date.now()-30*D).map(r=>(r.t.delivered-r.t.collected)/H);
+  const days=[],cnt=[];for(let i=13;i>=0;i--){const d0=new Date();d0.setHours(0,0,0,0);const s=d0.getTime()-i*D;days.push(new Date(s).getDate()+'');cnt.push(vrs.filter(r=>r.t.delivered>=s&&r.t.delivered<s+D).length)}
+  const title=u.role==='vendor'?esc(V(vid).name):'Vendor performance';
+  const right=u.role==='vendor'?'':'<label class="hint" style="display:flex;gap:6px;align-items:center">Vendor <select data-vsel>'+'<option value="">All vendors</option>'+DB.vendors.map(v=>'<option value="'+v.id+'"'+(v.id===vid?' selected':'')+'>'+esc(v.name)+'</option>').join('')+'</select></label>';
+  let h=head(u.role==='vendor'?'Vendor portal':'Dashboards',title,'Jobs, drivers and SLA over the last 30 days',right);
+  if(u.role==='vendor')h+=jobBoard(vrs);
+  h+='<div class="kpis">'+kpi('Active drivers',act+' / '+ds.length,'On a live job now','acc')+kpi('Jobs assigned',asg,'Last 30 days')+kpi('Jobs completed',dn,'Delivered, last 30 days','ok')+kpi('Delivery success rate',(dec.length?pct(dec.filter(r=>!r.rejected).length,dec.length):0)+'%','Accepted by stores')+kpi('SLA compliance',compliance(r30)+'%','Jobs created in 30 days',compliance(r30)>=90?'ok':'warn')+kpi('Avg delivery time',dur(dlh.length?avg(dlh):null),'Collection to delivery')+'</div>';
+  h+='<div class="grid">'+panel('Driver workload','live jobs per driver',hbar(st.map(x=>({l:x.d.name,v:x.s.active}))))+panel('Driver utilization','30-day jobs vs 14-job capacity',hbar(st.map(x=>({l:x.d.name,v:x.s.util,c:x.s.util>85?'var(--warn)':''})),{unit:'%'}))+'</div>';
+  h+='<div class="grid">'+panel('Daily delivery count','last 14 days, day of month',vbar(days,cnt,{label:'Daily deliveries'}))+panel('Needs attention','past SLA',attention(vrs,6),true)+'</div>';
+  h+=panel('Driver performance','last 30 days',driverTable(ds),true);
+  return h}
+function driverTable(ds){if(!ds.length)return'<div class="empty">No drivers registered.</div>';return'<div class="tw"><table class="t"><thead><tr><th>Driver</th><th class="hide-m">Vendor</th><th class="hide-m">Vehicle</th><th>Contact</th><th class="num">Live</th><th class="num">Assigned</th><th class="num">Completed</th><th class="num">Success</th><th class="num">SLA</th><th class="num hide-m">Avg delivery</th></tr></thead><tbody>'+ds.map(d=>{const s=driverStats(d,30);return'<tr><td>'+esc(d.name)+(d.active?'':' <span class="tag">Inactive</span>')+'</td><td class="hide-m">'+esc(V(d.vendor).name)+'</td><td class="hide-m">'+esc(d.vehicle+' · '+d.plate)+'</td><td class="mono">'+esc(d.phone)+'</td><td class="num">'+s.active+'</td><td class="num">'+s.asg+'</td><td class="num">'+s.done+'</td><td class="num">'+(s.succ==null?'—':s.succ+'%')+'</td><td class="num">'+(s.sla==null?'—':'<span class="sla '+slaCls(s.sla)+'">'+s.sla+'%</span>')+'</td><td class="num hide-m">'+dur(s.avgH)+'</td></tr>'}).join('')+'</tbody></table></div>'}
+function viewDrivers(){const u=me(),ds=DB.drivers.filter(d=>u.role!=='vendor'||d.vendor===u.vendor);return head(u.role==='vendor'?'Vendor portal':'Operations','Drivers',ds.length+' drivers · workload and 30-day performance',isHWS(u)?'<button class="btn pri" data-act="nav" data-v="admin" data-k="drivers">'+ico('plus',15)+'Register driver</button>':'')+panel('Drivers','',driverTable(ds),true)}
+
+/* ---------- requests ---------- */
+function filtered(){let a=scope();const f=S.f,q=S.q.trim().toLowerCase();
+  if(S.view==='proofs')a=a.filter(r=>r.proof.collection||r.proof.delivery);
+  if(f.status)a=a.filter(r=>statusOf(r)===f.status);if(f.state)a=a.filter(r=>r.st===f.state);if(f.region)a=a.filter(r=>ST(r.st).region===f.region);if(f.driver)a=a.filter(r=>r.driver===f.driver);if(f.vendor)a=a.filter(r=>r.vendor===f.vendor);
+  if(f.sla)a=a.filter(r=>slaOf(r).c===f.sla);if(f.from)a=a.filter(r=>r.t.created>=new Date(f.from+'T00:00:00').getTime());if(f.to)a=a.filter(r=>r.t.created<=new Date(f.to+'T23:59:59').getTime());
+  if(q)a=a.filter(r=>[r.no,r.driver&&DR(r.driver)?DR(r.driver).name:'',ST(r.st).region,ST(r.st).name,TO(r).name,TO(r).address,FROM(r).name,(r.rq?r.rq.name:''),(r.picName||''),r.vendor?V(r.vendor).name:'',iso(r.t.created),fd(r.t.created),r.item].join(' ').toLowerCase().includes(q));
+  return a}
+const sel=(id,l,opts,v)=>'<label>'+l+'<select data-f="'+id+'"><option value="">All</option>'+opts.map(o=>'<option value="'+esc(o[0])+'"'+(o[0]===v?' selected':'')+'>'+esc(o[1])+'</option>').join('')+'</select></label>';
+function viewRequests(){const u=me(),a=filtered(),f=S.f,proofs=S.view==='proofs';
+  const dr=DB.drivers.filter(d=>u.role!=='vendor'||d.vendor===u.vendor);
+  const ttl=proofs?'Proof documents':u.role==='vendor'?'Jobs':u.role==='user'?'My requests':u.role==='driver'?'Job history':'Requests';
+  let right='';if(!proofs&&(u.role==='user'||isHWS(u)))right+='<button class="btn pri" data-act="nav" data-v="new">'+ico('plus',15)+'New request</button>';if(isHWS(u))right+=expBtns('requests');
+  let h=head(proofs?'Operations':u.role==='vendor'?'Vendor portal':'Operations',ttl,a.length+' '+(a.length===1?'record':'records')+(S.q?' matching “'+esc(S.q)+'”':'')+(f.state?' in '+ST(f.state).name:''),right);
+  h+='<div class="flt">'+sel('status','Status',STATUSES.map(s=>[s,s]),f.status)+(u.role==='user'?'':sel('state','State',STATES.map(s=>[s.id,s.name]),f.state)+sel('region','Region',REGIONS.map(s=>[s,s]),f.region))+(isHWS(u)?sel('vendor','Vendor',DB.vendors.map(v=>[v.id,v.name]),f.vendor):'')+sel('sla','SLA',[['green','Within SLA'],['amber','Near breach'],['red','Breached']],f.sla)+(u.role==='driver'||u.role==='user'?'':sel('driver','Driver',dr.map(d=>[d.id,d.name]),f.driver))+'<label>From<input type="date" data-f="from" value="'+(f.from||'')+'"></label><label>To<input type="date" data-f="to" value="'+(f.to||'')+'"></label><button class="btn" data-act="clr">Clear</button></div>';
+  if(!a.length)return h+'<div class="panel empty">No request matches these filters.</div>';
+  const showCost=isHWS(u)&&!proofs;
+  h+='<div class="panel"><div class="tw"><table class="t"><thead><tr><th>Request</th><th>Route</th><th class="hide-m">Item</th><th>Status</th>'+(proofs?'<th>Collection</th><th>Delivery</th><th>HWS check</th>':'<th class="hide-m">Vendor</th><th class="hide-m">Driver</th><th class="hide-m">Created</th>'+(showCost?'<th class="num hide-m">Cost</th>':''))+'<th>SLA</th></tr></thead><tbody>';
+  a.slice(0,S.lim).forEach(r=>{const c=showCost?costView(r):null;h+='<tr class="rw" data-act="open" data-id="'+r.id+'"><td><span class="mono">'+r.no+'</span>'+(r.prio!=='Standard'?'<div><span class="tag'+(r.prio==='Critical'?' acc':'')+'">'+r.prio+'</span></div>':'')+'</td><td>'+esc(TO(r).name)+'<div class="hint">from '+esc(FROM(r).name)+'</div></td><td class="hide-m">'+esc(r.item)+' × '+r.qty+'</td><td>'+pill(statusOf(r))+(r.escalated?' <span class="sla red">Escalated</span>':'')+'</td>'+(proofs?'<td>'+(r.proof.collection?'Yes':'—')+'</td><td>'+(r.proof.delivery?'Yes':'—')+(r.gpsFlag?' <span class="sla amber">GPS check</span>':'')+'</td><td>'+(r.verified?'Verified':'Pending')+'</td>':'<td class="hide-m">'+esc(r.vendor?V(r.vendor).name:'—')+'</td><td class="hide-m">'+esc(r.driver&&DR(r.driver)?DR(r.driver).name:'—')+'</td><td class="hide-m">'+fdt(r.t.created)+'</td>'+(showCost?'<td class="num hide-m">'+(c?rm(c.total):'—')+'</td>':''))+'<td>'+slaPill(r)+'</td></tr>'});
+  h+='</tbody></table></div></div>';if(a.length>S.lim)h+='<p><button class="btn" data-act="more">Show 25 more ('+(a.length-S.lim)+' left)</button></p>';return h}
+function viewNew(){const u=me();const bs=DB.bases.filter(b=>b.active!==false);
+  const rqs=u.role==='user'?[u]:DB.users.filter(x=>x.role==='user'&&x.active).sort((a,b)=>a.name.localeCompare(b.name));
+  const pics=DB.users.filter(x=>isHWS(x)&&x.active);
+  if(!S.nr||!S.nr.files||!rqs.some(x=>x.id===S.nr.rq))S.nr={rq:rqs[0]?rqs[0].id:'',from:'B00',to:(rqs[0]&&rqs[0].base)||'',pic:isHWS(u)?u.id:((pics.find(x=>x.role==='hws')||pics[0]||{}).id||''),files:{pickup:[],drop:[]}};
+  const n=S.nr,bo=v=>bs.map(b=>'<option value="'+b.id+'"'+(b.id===v?' selected':'')+'>'+esc(b.name)+' · '+b.type+'</option>').join('');
+  return head('Operations',u.role==='user'?'New request':'New delivery job','The request number, date and time are generated when you submit.')
+   +'<form id="nf" class="nf"><section class="panel"><div class="hd"><h2>Route</h2><span>where the part is picked up and delivered</span></div><div class="bd f">'
+   +'<label>1. Collection point<select id="nf-from" data-nr="from">'+bo(n.from)+'</select></label>'
+   +'<label>2. Destination<select id="nf-to" data-nr="to">'+bo(n.to)+'</select></label>'
+   +'<div id="nr-route" class="wide"></div></div></section>'
+   +'<section class="panel"><div class="hd"><h2>People</h2><span>contact details fill in from the user profile</span></div><div class="bd f">'
+   +'<label>3. Requestor'+(u.role==='user'?'<input value="'+esc(u.name)+'" readonly>':'<select id="nf-rq" data-nr="rq">'+rqs.map(x=>'<option value="'+x.id+'"'+(x.id===n.rq?' selected':'')+'>'+esc(x.name)+' · '+esc(x.base?B(x.base).name:'no base')+'</option>').join('')+'</select>')+'</label>'
+   +'<label>4. HWS PIC<select id="nf-pic" data-nr="pic">'+pics.map(x=>'<option value="'+x.id+'"'+(x.id===n.pic?' selected':'')+'>'+esc(x.name)+' · '+ROLE[x.role]+'</option>').join('')+'</select></label>'
+   +'<div id="nr-rq" class="wide"></div></div></section>'
+   +'<section class="panel"><div class="hd"><h2>Job</h2></div><div class="bd f">'
+   +'<label>5. Quantity<input id="nf-qty" type="number" min="1" max="99" value="1" required></label>'
+   +'<label>6. Priority<select id="nf-prio" data-nr="prio"><option>Standard</option><option>Urgent</option><option>Critical</option></select></label>'
+   +'<label class="wide">Item or remarks (optional)<textarea id="nf-note" placeholder="Part description, fault reference, access instructions"></textarea></label>'
+   +'<div class="wide att2">'+[['pickup','Pickup attachments'],['drop','Drop point attachments']].map(k=>'<div><div class="lbl">'+k[1]+' (optional)</div><label class="btn sm" style="width:max-content">'+ico('plus',14)+'Add file<input type="file" multiple data-nrf="'+k[0]+'" hidden></label><div id="nrf-'+k[0]+'" class="atl"></div></div>').join('')+'</div>'
+   +'</div></section>'
+   +'<div class="row"><button class="btn pri" type="submit">Submit request</button><button class="btn" type="button" data-act="nav" data-v="'+(u.role==='user'?'mine':'requests')+'">Cancel</button><span class="err" id="nf-err" role="alert"></span></div></form>'}
+function baseCard(lbl,b){return'<div class="ic"><div class="hint">'+lbl+'</div><b>'+esc(b.name)+'</b> <span class="tag">'+b.type+'</span><div class="hint">'+esc(b.address||'No address registered')+'</div><div class="hint">'+(b.phone?'<span class="mono">'+esc(b.phone)+'</span> · ':'')+'<a href="'+gmap(b)+'" target="_blank" rel="noopener">Open in Google Maps</a></div></div>'}
+function contactCard(x){const b=x.base?B(x.base):null;return'<div class="ic cc"><div><div class="hint">Requestor details, from the user profile</div><b>'+esc(x.name)+'</b> <span class="tag">'+ROLE[x.role]+'</span><dl class="kv" style="margin-top:8px"><div><dt>Phone</dt><dd class="mono">'+esc(x.phone||'—')+'</dd></div><div><dt>Email</dt><dd>'+esc(x.email||'—')+'</dd></div><div><dt>Base</dt><dd>'+(b?esc(b.name):'—')+'</dd></div><div style="grid-column:1/-1"><dt>Address</dt><dd>'+esc(x.address||(b?b.address:'—'))+'</dd></div></dl>'+(b?'<div class="hint" style="margin-top:6px"><span class="mono">'+b.lat+', '+b.lng+'</span> · <a href="'+gmap(b)+'" target="_blank" rel="noopener">Open in Google Maps</a></div>':'')+'</div>'+(b?'<div>'+miniMap([{b,c:'to'}])+'</div>':'')+'</div>'}
+function miniMap(pts,many){const P=pts.map(p=>({q:prj(p.b.lng,p.b.lat),c:p.c,n:p.b.name}));if(!P.length)return'';const xs=P.map(p=>p.q[0]),ys=P.map(p=>p.q[1]);const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+  let w=Math.max(260,x1-x0+120),h=Math.max(150,y1-y0+80);if(w/h>2.4)h=w/2.4;else if(w/h<1.5)w=h*1.5;const cx=(x0+x1)/2,cy=(y0+y1)/2,rad=many?w/110:w/55;
+  let g=poly(PEN,'land')+poly(BOR,'land')+poly(BRN,'brn');
+  if(P.length===2&&!many)g+='<line class="rt" x1="'+P[0].q[0]+'" y1="'+P[0].q[1]+'" x2="'+P[1].q[0]+'" y2="'+P[1].q[1]+'" stroke-width="'+(w/200).toFixed(2)+'" stroke-dasharray="'+(w/60).toFixed(1)+' '+(w/90).toFixed(1)+'"/>';
+  P.forEach(p=>{g+='<circle class="pin-'+p.c+'" cx="'+p.q[0]+'" cy="'+p.q[1]+'" r="'+rad.toFixed(1)+'" stroke-width="'+(w/240).toFixed(2)+'"><title>'+esc(p.n)+'</title></circle>'});
+  return'<svg class="mini" viewBox="'+(cx-w/2).toFixed(0)+' '+(cy-h/2).toFixed(0)+' '+w.toFixed(0)+' '+h.toFixed(0)+'" role="img" aria-label="Map: '+esc(P.slice(0,4).map(p=>p.n).join(', '))+'">'+g+'</svg>'+(P.length===2&&!many?'<div class="legend" style="margin-top:4px"><span><span class="sw" style="background:var(--c2)"></span>Collection point</span><span><span class="sw" style="background:var(--bad)"></span>Destination</span></div>':'')}
+function nrSync(k){const g=id=>{const e=$(id);return e?e.value:''};const n=S.nr,u=me();if(!n||!$('#nf'))return;
+  n.from=g('#nf-from');n.pic=g('#nf-pic');n.rq=u.role==='user'?u.id:g('#nf-rq');
+  if(k==='rq'){const ru=DB.users.find(x=>x.id===n.rq);if(ru&&ru.base&&$('#nf-to'))$('#nf-to').value=ru.base}
+  n.to=g('#nf-to');
+  const F=B(n.from),T=B(n.to),ru=DB.users.find(x=>x.id===n.rq),same=n.from===n.to;
+  const re=$('#nr-route');if(re){let h='<div class="pair">'+baseCard('Collection point',F)+baseCard('Destination',T)+'</div><div class="row" style="margin-top:10px">'+(same?'<span class="err">Collection point and destination are the same.</span>':'<span class="tag acc">'+(crossSea(F,T)?'Air freight + 18 km last mile':kmBetween(F,T)+' km by road')+'</span>');
+    if(isHWS(u)&&!same){const est=DB.vendors.filter(v=>v.active&&v.coverage.includes(ST(T.state).region)).map(v=>({v,c:costOf({vendor:v.id,from:n.from,to:n.to,st:T.state,prio:g('#nf-prio')||'Standard',redisp:0,t:{}})}));h+=est.length?est.map(e=>'<span class="tag">'+esc(e.v.name)+': '+rm(e.c.total)+' ('+e.c.basis.toLowerCase()+')</span>').join(''):'<span class="tag">No vendor covers '+ST(T.state).region+'</span>'}
+    h+='</div>';if(!same)h+='<div style="margin-top:10px">'+miniMap([{b:F,c:'from'},{b:T,c:'to'}])+'</div>';re.innerHTML=h}
+  const rq=$('#nr-rq');if(rq)rq.innerHTML=ru?contactCard(ru):'<p class="hint">No regional user is registered yet. Add one under Users, bases, rates.</p>'}
+const MAXB=8*1024*1024;
+const fsz=b=>b>=1048576?(b/1048576).toFixed(1)+' MB':Math.max(1,Math.round(b/1024))+' KB';
+const fileIco=f=>/^image\//.test(f.type)?'<img src="'+f.data+'" alt="" class="fi">':'<span class="fi ft">'+esc((f.name.split('.').pop()||'file').toUpperCase().slice(0,4))+'</span>';
+function procFile(f){return new Promise(res=>{const fr=new FileReader();
+  const done=(name,type,d)=>{const size=Math.round((d.length-d.indexOf(',')-1)*.75);if(size>MAXB)res({err:name+' is over 8 MB. Each file must be under 8 MB.'});else res({name,type,size,data:d})};
+  fr.onerror=()=>res({err:'Could not read '+f.name});
+  fr.onload=()=>{const data=String(fr.result);if(/^image\/(jpeg|png|webp)$/.test(f.type)){const im=new Image();im.onload=()=>{const k=Math.min(1,1600/Math.max(im.width,im.height)),cv=document.createElement('canvas');cv.width=Math.round(im.width*k);cv.height=Math.round(im.height*k);const cx=cv.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,cv.width,cv.height);cx.drawImage(im,0,0,cv.width,cv.height);done(f.name.replace(/\.[^.]+$/,'')+'.jpg','image/jpeg',cv.toDataURL('image/jpeg',.75))};im.onerror=()=>done(f.name,f.type,data);im.src=data}else done(f.name,f.type||'application/octet-stream',data)};
+  fr.readAsDataURL(f)})}
+async function nrAddFiles(k,fl){for(const f of [...fl]){const x=await procFile(f);if(x.err){toast(x.err);continue}S.nr.files[k].push(x)}const i=document.querySelector('[data-nrf="'+k+'"]');if(i)i.value='';nrFiles()}
+function nrFiles(){['pickup','drop'].forEach(k=>{const el=$('#nrf-'+k);if(el)el.innerHTML=((S.nr&&S.nr.files&&S.nr.files[k])||[]).map((f,i)=>'<div class="af">'+fileIco(f)+'<div class="nm">'+esc(f.name)+'<div class="hint">'+fsz(f.size)+'</div></div><button type="button" class="btn sm" data-act="nrfdel" data-k="'+k+'" data-i="'+i+'">Remove</button></div>').join('')})}
+function attPanel(r){const u=me();return panel('Attachments','pickup and drop point','<div class="att2">'+[['pickup','Pickup'],['drop','Drop point']].map(k=>{const fs=(r.files||[]).filter(f=>f.kind===k[0]);return'<div><div class="row" style="justify-content:space-between;margin-bottom:6px"><b>'+k[1]+'</b><span class="hint">'+fs.length+' file'+(fs.length===1?'':'s')+'</span></div><div class="atl">'+(fs.length?fs.map(f=>'<div class="af">'+fileIco(f)+'<div class="nm"><button class="lnk" data-act="attdl" data-id="'+f.id+'" title="Download '+esc(f.name)+'">'+esc(f.name)+'</button><div class="hint">'+fsz(f.size)+' · '+esc(f.by)+' · '+fdt(f.ts)+'</div></div>'+((f.by===u.name||u.role==='admin')?'<button class="btn sm" data-act="attdel" data-id="'+f.id+'">Delete</button>':'')+'</div>').join(''):'<p class="hint" style="margin:0">No files yet.</p>')+'</div><label class="btn sm" style="margin-top:8px;width:max-content">'+ico('plus',14)+'Add file<input type="file" multiple data-att="'+k[0]+'" hidden></label></div>'}).join('')+'</div><p class="hint" style="margin:10px 0 0">Photos are resized automatically. Other files up to 8 MB each.</p>')}
+async function addAttachments(k,fl){const r=DB.reqs.find(x=>x.id===S.sel);if(!r)return;const u=me();let n=0;r.files=r.files||[];
+  for(const f of [...fl]){const x=await procFile(f);if(x.err){toast(x.err);continue}r.files.push(Object.assign({id:uid('f'),kind:k,by:u.name,ts:Date.now()},x));if(!save()){r.files.pop();toast('Storage on this device is full, so '+x.name+' was not saved.');break}n++;r.log.push({ts:Date.now(),user:u.name,role:ROLE[u.role],action:(k==='pickup'?'Pickup':'Drop point')+' attachment added',remarks:x.name})}
+  if(n){save();toast(n+' file'+(n>1?'s':'')+' added');renderDrawer()}}
+function attFind(id){const r=DB.reqs.find(x=>x.id===S.sel);return r?{r,f:(r.files||[]).find(x=>x.id===id)}:{}}
+async function attDownload(id){const o=attFind(id);if(!o.f)return;if(/^data:/.test(o.f.data))return saveFile(o.f.name,dataUrlBlob(o.f.data));try{const r=await fetch(o.f.data,{credentials:'same-origin'});if(!r.ok)throw 0;saveFile(o.f.name,await r.blob())}catch(e){toast('Could not download '+o.f.name)}}
+function attDelete(id){const o=attFind(id),u=me();if(!o.f)return;if(o.f.by!==u.name&&u.role!=='admin'){toast('Only the person who uploaded it, or the Administrator, can delete this file.');return}o.r.files=o.r.files.filter(x=>x.id!==id);o.r.log.push({ts:Date.now(),user:u.name,role:ROLE[u.role],action:'Attachment deleted',remarks:o.f.name});save();toast('Deleted '+o.f.name);renderDrawer()}
+/* ---------- SLA ---------- */
+function viewSLA(){const u=me(),rs=scope(),open=rs.filter(isOpen),lead=isLead(u);
+  let h=head('Operations','SLA management','Targets by stage and delivery zone. Applies to live and finished requests.')+legend+'<div class="kpis" style="margin-top:14px">';
+  MET.forEach(m=>{const ms=rs.map(r=>slaOf(r).ms.find(x=>x.k===m[0])).filter(Boolean);const met=ms.filter(x=>x.done&&x.st==='met').length,br=ms.filter(x=>x.st==='breached').length,nr=ms.filter(x=>x.st==='near').length;
+    const lab={response:'Created → driver assigned',collection:'Driver assigned → collected',delivery:'Collected → delivered',e2e:'Created → completed'}[m[0]];const p=metPct(rs,m[0]);
+    h+=kpi(m[1]+' SLA',p==null?'—':p+'%',lab+' · '+met+' met · '+nr+' near · '+br+' breached',p==null?'':p>=90?'ok':'warn')});
+  h+='</div>';
+  const zones=['A','B','C'];
+  h+='<div class="grid">'+panel('SLA targets (hours)',lead?'Editable by Admin and Manager':'View only','<div class="tw"><table class="t rc"><thead><tr><th>Stage</th>'+zones.map(z=>'<th class="num">'+ZN[z]+'</th>').join('')+'</tr></thead><tbody>'+MET.map(m=>'<tr><td>'+m[1]+'</td>'+zones.map(z=>{const per=typeof DB.sla[m[0]]==='object';const v=per?DB.sla[m[0]][z]:DB.sla[m[0]];return'<td class="num">'+(per||z==='A'?'<input type="number" min="1" max="400" step="0.5" value="'+v+'" data-sla="'+m[0]+'" data-z="'+(per?z:'')+'" aria-label="'+m[1]+' '+ZN[z]+'" '+(lead?'':'disabled')+'>':'<span class="hint">same</span>')+'</td>'}).join('')+'</tr>').join('')+'</tbody></table></div><p class="hint" style="padding:0 16px">Response and collection targets apply to every zone.</p>',true)+panel('SLA heatmap','% finished stages within target',heat(REGIONS,['Response','Collection','Delivery','End-to-end'],(g,c)=>metPct(rs.filter(r=>ST(r.st).region===g),MET.find(m=>m[1]===c)[0])))+'</div>';
+  const a=open.filter(r=>slaOf(r).c!=='green').sort((x,y)=>x.t.created-y.t.created).slice(0,10);
+  h+=panel('Open jobs at risk','amber and red',a.length?listTable(a):'<div class="empty">All open jobs are within SLA.</div>',!!a.length);
+  return h}
+
+/* ---------- reports ---------- */
+const REPS={delivery:'Delivery performance',driver:'Driver performance',sla:'Monthly SLA',cost:'Cost per job',states:'State summary',txn:'Detailed transactions'};
+function reportData(k){k=k||S.rep;const since=periodStart();const rs=scope().filter(r=>r.t.created>=since);
+  if(k==='delivery')return{t:'Delivery Performance Report',h:['Request Number','Collection Point','Destination','State','Region','Request Date','Vendor','Driver','Collection Time','Delivery Time','Completion Time','SLA Performance'],rows:rs.map(r=>[r.no,FROM(r).name,TO(r).name,ST(r.st).name,ST(r.st).region,iso(r.t.created),r.vendor?V(r.vendor).name:'',r.driver&&DR(r.driver)?DR(r.driver).name:'',iso(r.t.collected),iso(r.t.delivered),iso(r.t.completed),LBL[slaOf(r).c]])};
+  if(k==='driver')return{t:'Driver Performance Report',h:['Driver Name','Vendor','Jobs Assigned','Jobs Completed','Success Rate','Average Delivery Time'],rows:DB.drivers.map(d=>{const a=rs.filter(r=>r.driver===d.id),dl=a.filter(r=>r.t.delivered),dec=a.filter(r=>r.t.decided);return[d.name,V(d.vendor).name,a.length,dl.length,dec.length?pct(dec.filter(r=>!r.rejected).length,dec.length)+'%':'n/a',dl.length?dur(avg(dl.map(r=>(r.t.delivered-r.t.collected)/H))):'n/a']})};
+  if(k==='sla'){const mo=months(6);const rows=[];mo.forEach(m=>REGIONS.forEach(g=>{const a=rs.filter(r=>inMonth(r.t.created,m)&&ST(r.st).region===g);if(!a.length)return;const b=a.filter(r=>slaOf(r).c==='red').length;rows.push([m.l.replace('*','')+' '+m.y,g,a.length,a.length-b,b,pct(a.length-b,a.length)+'%'])}));return{t:'Monthly SLA Report',h:['Month','Region','Total Jobs','SLA Met','SLA Breached','SLA %'],rows}}
+  if(k==='cost')return{t:'Cost per Job Report',h:['Request Number','Request Date','Collection Point','Destination','State','Vendor','Priority','km','Route rate / base (RM)','Distance (RM)','Toll (RM)','Air freight (RM)','Surcharge (RM)','Re-dispatch (RM)','Total (RM)','Rate basis','Basis'],rows:rs.filter(r=>r.vendor).map(r=>{const c=costView(r);return[r.no,iso(r.t.created),FROM(r).name,TO(r).name,ST(r.st).name,V(r.vendor).name,r.prio,c.km,c.base,c.dist,c.toll,c.air,c.sur,c.red,c.total,c.basis,c.final?'Actual':'Estimate']})};
+  if(k==='states')return{t:'State Summary',h:['State','Region','Zone','Requests','Open','Overdue','Completed','SLA %','Avg delivery (h)','Cost (RM)'],rows:stateRows(rs).map(x=>[x.s.name,x.s.region,ZONE(x.s),x.n,x.open,x.od,x.done,x.sla==null?'':x.sla,x.avgDel==null?'':+x.avgDel.toFixed(1),r2(x.cost)])};
+  if(k==='requests'){const a=filtered();return{t:'Request List',h:['Request Number','Created','Collection Point','Destination','State','Requestor','Requestor Phone','HWS PIC','Item / remarks','Qty','Priority','Status','Vendor','Driver','SLA','Cost (RM)'],rows:a.map(r=>{const c=costView(r);return[r.no,iso(r.t.created),FROM(r).name,TO(r).name,ST(r.st).name,(r.rq?r.rq.name:''),(r.rq?r.rq.phone:''),(r.picName||''),r.item,r.qty,r.prio,statusOf(r),r.vendor?V(r.vendor).name:'',r.driver&&DR(r.driver)?DR(r.driver).name:'',LBL[slaOf(r).c],c?c.total:'']})}}
+  if(k==='audit'){const ev=allEvents().filter(e=>e.ts>=since);return{t:'Audit Trail',h:['Timestamp','User','Role','Action','Request Number','Remarks'],rows:ev.map(e=>[iso(e.ts),e.user,e.role,e.action,e.no,e.remarks])}}
+  const ev=rs.flatMap(hist).sort((a,b)=>a.ts-b.ts);return{t:'Detailed Transaction Report',h:['Request Number','Timestamp','User','Role','Action','Remarks'],rows:ev.map(e=>[e.no,iso(e.ts),e.user,e.role,e.action,e.remarks])}}
+function viewReports(){const d=reportData();
+  return head('Reports','Reports',d.rows.length+' rows · '+PLBL[S.period],periodCtl())+'<div class="tabs" role="tablist">'+Object.keys(REPS).map(k=>'<button role="tab" data-act="rep" data-k="'+k+'" aria-selected="'+(S.rep===k)+'">'+REPS[k]+'</button>').join('')+'</div>'+panel(d.t,'Preview, first 40 rows','<div class="tw"><table class="t"><thead><tr>'+d.h.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+d.rows.slice(0,40).map(r=>'<tr>'+r.map(c=>'<td>'+esc(c)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>',true,expBtns('report'))+'<p class="hint">Exports include every row in the period. Excel and PDF need an internet connection the first time, to load the file libraries.</p>'}
+
+/* ---------- audit ---------- */
+function viewAudit(){const ev=allEvents(),q=S.q.trim().toLowerCase();const a=q?ev.filter(e=>(e.no+e.user+e.action+e.role).toLowerCase().includes(q)):ev;
+  return head('Administration','Audit trail',a.length+' recorded activities. Use the search box to filter.',expBtns('audit'))+panel('Activity log','latest 100','<div class="tw"><table class="t"><thead><tr><th>Date and time</th><th>User</th><th class="hide-m">Role</th><th>Action</th><th>Request</th></tr></thead><tbody>'+a.slice(0,100).map(e=>'<tr><td style="white-space:nowrap">'+iso(e.ts)+'</td><td>'+esc(e.user)+'</td><td class="hide-m">'+esc(e.role)+'</td><td>'+esc(e.action)+(e.remarks?'<div class="hint">'+esc(e.remarks)+'</div>':'')+'</td><td class="mono">'+esc(e.no)+'</td></tr>').join('')+'</tbody></table></div>',true)}
+
+/* ---------- administration ---------- */
+const ADM={users:'Users',bases:'Bases',rates:'Rate card',vendors:'Vendors',drivers:'Drivers',notif:'Notifications',perm:'Role permissions'};
+if(LOCAL)ADM.backup='Backup';
+function viewAdmin(){const u=me();let h=head('Administration','Users, bases and rates','Register or delete users, bases and route rates. Manage vendors, drivers and notification rules.')+'<div class="tabs" role="tablist">'+Object.keys(ADM).map(k=>'<button role="tab" data-act="adm" data-k="'+k+'" aria-selected="'+(S.adm===k)+'">'+ADM[k]+'</button>').join('')+'</div>';
+  const k=S.adm;
+  if(k==='users')h+=admUsers(u);else if(k==='bases')h+=admBases(u);else if(k==='vendors')h+=admVendors(u);else if(k==='drivers')h+=admDrivers(u);else if(k==='rates')h+=admRates(u);else if(k==='notif')h+=admNotif();else if(k==='backup'&&LOCAL)h+=admBackup(u);else h+=admPerm();
+  return h}
+function scopeLbl(x){return x.role==='vendor'?V(x.vendor).name:x.role==='driver'?((DR(x.driver)?DR(x.driver).name:'')+' · '+V(x.vendor).name):x.role==='user'?(x.base?B(x.base).name:'Own requests'):'All data'}
+function admUsers(u){const f=S.form==='user';const bo=DB.bases.filter(b=>b.active!==false).map(b=>'<option value="'+b.id+'">'+esc(b.name)+'</option>').join('');
+  let h='<div class="kpis">'+Object.keys(ROLE).map(k=>kpi(ROLE[k],DB.users.filter(x=>x.role===k&&x.active).length,DB.users.filter(x=>x.role===k&&!x.active).length+' inactive')).join('')+'</div>';
+  if(f)h+=panel('Register user','contact details and address','<form id="fu" class="f"><label>Full name<input id="fu-name" required></label><label>Username<input id="fu-user" required autocomplete="off" placeholder="name.surname"></label><label>Role<select id="fu-role">'+Object.keys(ROLE).filter(k=>k!=='admin'||u.role==='admin').map(k=>'<option value="'+k+'"'+(k==='user'?' selected':'')+'>'+ROLE[k]+'</option>').join('')+'</select></label><label>Mobile phone<input id="fu-phone" type="tel" required placeholder="+60 12-345 6789"></label><label>Email<input id="fu-email" type="email" placeholder="name@company.com"></label><label id="fu-bw">Store (required)<select id="fu-base"><option value="">None</option>'+bo+'</select></label><label id="fu-vw">Vendor<select id="fu-vendor">'+DB.vendors.map(v=>'<option value="'+v.id+'">'+esc(v.name)+'</option>').join('')+'</select></label><label id="fu-dw">Driver record<select id="fu-driver"></select></label><label class="wide">Address<textarea id="fu-addr" placeholder="Street, postcode, city, state. Left blank, the base address is used."></textarea></label><label>Temporary password<input id="fu-pw" value="welcome123"></label><div class="wide row"><button class="btn pri" type="submit">Register user</button><button class="btn" type="button" data-act="form" data-k="">Cancel</button><span class="err" id="fu-err" role="alert"></span></div></form>')+'<div style="height:14px"></div>';
+  h+=panel('Users',DB.users.length+' accounts','<div class="tw"><table class="t"><thead><tr><th>Name</th><th>Role</th><th>Contact</th><th class="hide-m">Base and address</th><th>Status</th>'+(isLead(u)?'<th></th>':'')+'</tr></thead><tbody>'+DB.users.map(x=>'<tr><td>'+esc(x.name)+'<div class="hint mono">'+esc(x.username)+'</div></td><td><span class="tag'+(isHWS(x)?' acc':'')+'">'+ROLE[x.role]+'</span><div class="hint">'+esc(scopeLbl(x))+'</div></td><td><span class="mono">'+esc(x.phone||'—')+'</span><div class="hint">'+esc(x.email||'')+'</div></td><td class="hide-m" style="max-width:300px">'+(x.base?esc(B(x.base).name)+'<br>':'')+'<span class="hint">'+esc(x.address||'—')+'</span></td><td>'+(x.active?'<span class="sla green">Active</span>':'<span class="sla na">Inactive</span>')+'</td>'+(isLead(u)?'<td><div class="row" style="flex-wrap:nowrap">'+(x.id===u.id?'<span class="hint">You</span>':'<button class="btn sm" data-act="toggleUser" data-k="'+x.id+'">'+(x.active?'Deactivate':'Activate')+'</button>'+(u.role==='admin'?'<button class="btn sm" data-act="resetPw" data-k="'+x.id+'">Reset password</button><button class="btn sm" data-act="del" data-k="user" data-id="'+x.id+'">Delete</button>':''))+'</div></td>':'')+'</tr>').join('')+'</tbody></table></div>',true,f?'':'<button class="btn sm pri" data-act="form" data-k="user">'+ico('plus',15)+'Register user</button>');
+  return h}
+function admBases(u){const f=S.form==='base',adm=u.role==='admin',act=DB.bases.filter(b=>b.active!==false);let h='';
+  if(f)h+=panel('Register base','collection point or destination','<form id="fb" class="f"><label>Name<input id="fb-name" required placeholder="e.g. Seremban 2 service point"></label><label>Type<select id="fb-type"><option>Store</option><option>Warehouse</option><option>Hub</option><option>Customer site</option></select></label><label>State<select id="fb-state">'+STATES.map(s=>'<option value="'+s.id+'">'+s.name+'</option>').join('')+'</select></label><label>Phone<input id="fb-phone" type="tel"></label><label class="wide">Address<textarea id="fb-addr" required placeholder="Street, postcode, city, state"></textarea></label><label>Coordinates (optional)<input id="fb-ll" placeholder="3.0738, 101.5183"></label><p class="hint" style="align-self:end;margin:0 0 6px">In Google Maps, right-click the spot and copy the two numbers. <a id="fb-gm" href="https://www.google.com/maps" target="_blank" rel="noopener">Find this address on Google Maps</a>. If left blank, the state capital is used.</p><div class="wide row"><button class="btn pri" type="submit">Register base</button><button class="btn" type="button" data-act="form" data-k="">Cancel</button><span class="err" id="fb-err" role="alert"></span></div></form>')+'<div style="height:14px"></div>';
+  h+='<div class="grid g2">'+panel('Bases',act.length+' active','<div class="tw"><table class="t"><thead><tr><th>Name</th><th>Type</th><th class="hide-m">Address</th><th>Location</th><th class="num">Jobs</th>'+(adm?'<th></th>':'')+'</tr></thead><tbody>'+DB.bases.map(b=>{const n=DB.reqs.filter(r=>r.from===b.id||r.to===b.id).length;return'<tr'+(b.active===false?' class="off"':'')+'><td>'+esc(b.name)+(b.active===false?' <span class="tag">Removed</span>':'')+'<div class="hint">'+ST(b.state).name+(b.phone?' · '+esc(b.phone):'')+'</div></td><td><span class="tag'+(b.type!=='Store'?' acc':'')+'">'+b.type+'</span></td><td class="hide-m" style="max-width:280px"><span class="hint">'+esc(b.address)+'</span></td><td><a class="mono" href="'+gmap(b)+'" target="_blank" rel="noopener">'+b.lat.toFixed(3)+', '+b.lng.toFixed(3)+'</a></td><td class="num">'+n+'</td>'+(adm?'<td>'+(b.active===false?'<button class="btn sm" data-act="restoreBase" data-id="'+b.id+'">Restore</button>':'<button class="btn sm" data-act="del" data-k="base" data-id="'+b.id+'">Delete</button>')+'</td>':'')+'</tr>'}).join('')+'</tbody></table></div>',true,f?'':'<button class="btn sm pri" data-act="form" data-k="base">'+ico('plus',15)+'Register base</button>')
+   +panel('Map','active bases',miniMap(act.map(b=>({b,c:b.type==='Store'||b.type==='Customer site'?'to':'from'})),true)+'<div class="legend" style="margin-top:8px"><span><span class="sw" style="background:var(--c2)"></span>Warehouse or hub</span><span><span class="sw" style="background:var(--bad)"></span>Store or customer site</span></div>')+'</div>';
+  return h}
+function admVendors(u){const f=S.form==='vendor';let h='';
+  if(f)h+=panel('Register vendor','','<form id="fv" class="f"><label>Company name<input id="fv-name" required></label><label>SSM registration no.<input id="fv-reg" placeholder="12-digit number"></label><label>Contact person<input id="fv-contact" required></label><label>Phone<input id="fv-phone"></label><label>Email<input id="fv-email" type="email"></label><fieldset class="wide"><legend class="hint">Coverage regions</legend><div class="row">'+REGIONS.map(g=>'<label class="chk"><input type="checkbox" data-cov="'+g+'"> '+g+'</label>').join('')+'</div></fieldset><label>Base fee (RM)<input id="fv-base" type="number" step="0.01" value="45"></label><label>Per km (RM)<input id="fv-km" type="number" step="0.01" value="0.85"></label><label>Toll per km (RM)<input id="fv-toll" type="number" step="0.01" value="0.10"></label><label>Air freight per job (RM)<input id="fv-air" type="number" step="0.01" value="0"></label><label class="wide chk"><input type="checkbox" id="fv-admin" checked> Also create a vendor admin login for the contact person</label><div class="wide row"><button class="btn pri" type="submit">Register vendor</button><button class="btn" type="button" data-act="form" data-k="">Cancel</button><span class="err" id="fv-err" role="alert"></span></div></form>')+'<div style="height:14px"></div>';
+  h+=panel('Vendors',DB.vendors.length+' registered','<div class="tw"><table class="t"><thead><tr><th>Vendor</th><th class="hide-m">SSM no.</th><th>Contact</th><th>Coverage</th><th class="num">Drivers</th><th class="num">Live jobs</th><th>Status</th>'+(isLead(u)?'<th></th>':'')+'</tr></thead><tbody>'+DB.vendors.map(v=>'<tr><td>'+esc(v.name)+'</td><td class="hide-m mono">'+esc(v.regNo||'—')+'</td><td>'+esc(v.contact)+'<div class="hint mono">'+esc(v.phone||'')+'</div></td><td>'+v.coverage.map(g=>'<span class="tag">'+g+'</span>').join(' ')+'</td><td class="num">'+DB.drivers.filter(d=>d.vendor===v.id).length+'</td><td class="num">'+DB.reqs.filter(r=>r.vendor===v.id&&isOpen(r)).length+'</td><td>'+(v.active?'<span class="sla green">Active</span>':'<span class="sla na">Inactive</span>')+'</td>'+(isLead(u)?'<td><button class="btn sm" data-act="toggleVendor" data-k="'+v.id+'">'+(v.active?'Deactivate':'Activate')+'</button></td>':'')+'</tr>').join('')+'</tbody></table></div>',true,f?'':'<button class="btn sm pri" data-act="form" data-k="vendor">'+ico('plus',15)+'Register vendor</button>');
+  return h}
+function admDrivers(u){const f=S.form==='driver';let h='';
+  if(f)h+=panel('Register driver','','<form id="fd" class="f"><label>Full name<input id="fd-name" required></label><label>Vendor<select id="fd-vendor">'+DB.vendors.filter(v=>v.active).map(v=>'<option value="'+v.id+'">'+esc(v.name)+'</option>').join('')+'</select></label><label>Mobile number<input id="fd-phone" required placeholder="+60 12-345 6789"></label><label>Vehicle<select id="fd-veh"><option>Van</option><option>Motorcycle</option><option>Lorry 1-tonne</option><option>Car</option></select></label><label>Plate number<input id="fd-plate" required placeholder="WXA 1234"></label><label>Login username<input id="fd-user" placeholder="Generated from name if blank"></label><div class="wide row"><button class="btn pri" type="submit">Register driver</button><button class="btn" type="button" data-act="form" data-k="">Cancel</button><span class="err" id="fd-err" role="alert"></span></div><p class="hint wide" style="margin:0">A driver login is created with the temporary password welcome123.</p></form>')+'<div style="height:14px"></div>';
+  h+=panel('Drivers',DB.drivers.length+' registered',driverTable(DB.drivers),true,f?'':'<button class="btn sm pri" data-act="form" data-k="driver">'+ico('plus',15)+'Register driver</button>');
+  return h}
+function admRates(u){const lead=isLead(u),adm=u.role==='admin',f=S.form==='route';const bo=DB.bases.filter(b=>b.active!==false).map(b=>'<option value="'+b.id+'">'+esc(b.name)+'</option>').join('');
+  let h='';
+  if(f)h+=panel('Add route rate','point 1 to point 2','<form id="fr" class="f"><label>Point 1 · collection<select id="fr-from" data-fr="1">'+bo+'</select></label><label>Point 2 · destination<select id="fr-to" data-fr="1">'+bo+'</select></label><label>Vendor<select id="fr-vendor" data-fr="1"><option value="">Any vendor</option>'+DB.vendors.map(v=>'<option value="'+v.id+'">'+esc(v.name)+'</option>').join('')+'</select></label><label>Price per job (RM)<input id="fr-price" type="number" min="0" step="0.01" required></label><label>Est. transit (hours)<input id="fr-hours" type="number" min="0" step="0.5"></label><p class="hint" id="fr-hint" style="align-self:end;margin:0 0 6px"></p><div class="wide row"><button class="btn pri" type="submit">Save route rate</button><button class="btn" type="button" data-act="form" data-k="">Cancel</button><span class="err" id="fr-err" role="alert"></span></div></form>')+'<div style="height:14px"></div>';
+  const rows=DB.routes.slice().sort((a,b)=>B(a.from).name.localeCompare(B(b.from).name)||B(a.to).name.localeCompare(B(b.to).name)||(a.vendor||'').localeCompare(b.vendor||''));
+  h+=panel('Route rate card',rows.length+' routes · checked before the formula','<div class="tw"><table class="t"><thead><tr><th>Point 1 · collection</th><th>Point 2 · destination</th><th>Vendor</th><th class="num">Distance</th><th class="num">Price</th><th class="num hide-m">Transit</th><th class="num hide-m">Jobs</th>'+(adm?'<th></th>':'')+'</tr></thead><tbody>'+(rows.length?rows.map(x=>{const F=B(x.from),T=B(x.to),n=DB.reqs.filter(r=>r.from===x.from&&r.to===x.to&&(!x.vendor||r.vendor===x.vendor)).length;return'<tr><td>'+esc(F.name)+'</td><td>'+esc(T.name)+'<div class="hint">'+ST(T.state).name+'</div></td><td>'+(x.vendor?esc(V(x.vendor).name):'<span class="tag">Any vendor</span>')+'</td><td class="num">'+(crossSea(F,T)?'Air':kmBetween(F,T)+' km')+'</td><td class="num"><b>'+rm(x.price,2)+'</b></td><td class="num hide-m">'+(x.hours?x.hours+' h':'—')+'</td><td class="num hide-m">'+n+'</td>'+(adm?'<td><button class="btn sm" data-act="del" data-k="route" data-id="'+x.id+'">Delete</button></td>':'')+'</tr>'}).join(''):'<tr><td colspan="8" class="empty">No route rates yet.</td></tr>')+'</tbody></table></div>',true,(f||!lead)?'':'<button class="btn sm pri" data-act="form" data-k="route">'+ico('plus',15)+'Add route rate</button>');
+  h+='<div style="height:14px"></div>'+panel('Formula fallback','used when no route rate matches the job','<div class="tw"><table class="t rc"><thead><tr><th>Vendor</th><th class="num">Base fee (RM)</th><th class="num">Per km (RM)</th><th class="num">Toll per km (RM)</th><th class="num">Air freight (RM/job)</th></tr></thead><tbody>'+DB.vendors.map(v=>'<tr><td>'+esc(v.name)+'</td>'+['base','perKm','toll','air'].map(k=>'<td class="num"><input type="number" step="0.01" min="0" value="'+v[k]+'" data-rate="'+v.id+'" data-k="'+k+'" aria-label="'+esc(v.name)+' '+k+'" '+(lead?'':'disabled')+'></td>').join('')+'</tr>').join('')+'</tbody></table></div>',true);
+  h+='<div style="height:14px"></div>'+panel('Priority surcharge','% added on top of the job cost','<div class="row">'+['Urgent','Critical'].map(p=>'<label class="hint" style="display:flex;gap:6px;align-items:center">'+p+' <input type="number" min="0" max="200" step="5" value="'+Math.round(DB.rates.sur[p]*100)+'" data-sur="'+p+'" style="width:90px;text-align:right" '+(lead?'':'disabled')+'> %</label>').join('')+'</div><p class="hint">Changes reprice open jobs straight away. Closed jobs keep the cost they closed with.</p>');
+  return h}
+function frHint(){const f=$('#fr-from'),t=$('#fr-to'),v=$('#fr-vendor'),o=$('#fr-hint');if(!f||!o)return;if(f.value===t.value){o.textContent='Pick two different points.';return}const F=B(f.value),T=B(t.value),km=kmBetween(F,T),air=crossSea(F,T);const vs=v.value?[V(v.value)]:DB.vendors.filter(x=>x.active);const est=vs.map(x=>x.base+x.perKm*km+(air?x.air:x.toll*km));
+  o.textContent=(air?'Air freight + 18 km last mile':km+' km by road')+'. The formula gives '+rm(Math.min(...est))+(est.length>1&&Math.max(...est)!==Math.min(...est)?' to '+rm(Math.max(...est)):'')+'.';const ex=DB.routes.find(x=>x.from===f.value&&x.to===t.value&&x.vendor===v.value);if(ex)o.textContent+=' A rate of '+rm(ex.price,2)+' already exists; saving replaces it.'}
+function admNotif(){const c=[['inapp','In-app'],['email','Email'],['teams','Microsoft Teams (optional)'],['sms','SMS (optional)']];
+  const tr=[['Request created','HWS team'],['Ready for driver assignment','Vendor admin'],['Driver assigned','HWS, regional user, driver'],['Collection completed','HWS, vendor admin'],['In transit','Regional user'],['Delivered','Regional user, HWS'],['Accepted or rejected','HWS, vendor admin'],['SLA breach','HWS Manager, Administrator, vendor admin']];
+  return'<div class="grid">'+panel('Channels','','<div class="row">'+c.map(x=>'<label class="chk"><input type="checkbox" data-ch="'+x[0]+'"'+(DB.ch[x[0]]?' checked':'')+'> '+x[1]+'</label>').join('')+'</div><p class="hint">Notifications show in the app. Email, Teams and SMS delivery needs a mail or messaging service connected to the server; until then each notification records the channels it was meant for.</p>')+panel('Triggers','who is notified',pt(['Event','Notifies'],tr),true)+'</div>'}
+function admPerm(){const roles=['Administrator','HWS Manager','HWS Staff','Vendor Admin','Driver','Regional User'];
+  const Y='<span class="yes">✓</span>',N='<span class="no">—</span>';
+  const mx=[['All dashboards (overview, operations, state map, costing)',Y,Y,Y,N,N,N],['Vendor performance and driver dashboard',Y,Y,Y,'Own vendor',N,N],['Request details dashboard',Y,Y,Y,'Own jobs','Own jobs','Own requests'],['Download reports (Excel, CSV, PDF)',Y,Y,Y,N,N,N],['View costing details',Y,Y,Y,N,N,N],['Register users (contact details, address) and bases',Y,Y,Y,N,N,N],['Register vendors and drivers',Y,Y,Y,N,N,N],['Add route rates, edit formula rates and SLA',Y,Y,N,N,N,N],['Delete users, bases and route rates',Y,N,N,N,N,N],['Deactivate accounts and vendors',Y,Y,N,N,N,N],['Create requests',Y,Y,Y,N,N,Y],['Upload pickup and drop point attachments',Y,Y,Y,'Own jobs','Own jobs','Own requests'],['Validate request, select vendor',Y,Y,Y,N,N,N],['Assign driver',N,N,N,Y,N,N],['Collect and deliver with proof',N,N,N,N,Y,N],['Accept or reject delivery',N,N,N,N,N,Y],['Escalate',Y,Y,N,N,N,N],['Undo workflow steps and delete requests',Y,N,N,N,N,N],['Audit trail',Y,Y,Y,N,N,N]];
+  return panel('Role permissions','role-based access control','<div class="tw"><table class="t mat"><thead><tr><th>Capability</th>'+roles.map(r=>'<th>'+r+'</th>').join('')+'</tr></thead><tbody>'+mx.map(r=>'<tr>'+r.map(c=>'<td>'+c+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>',true)+'<div style="height:14px"></div>'+panel('Security','',pt(['Control','Status'],[['Role-based access, enforced by the server, with row scoping by vendor, driver and requestor','Working'],['Audit log of sign-ins, registrations, deletions, rate changes and job actions','Working'],['Passwords hashed with scrypt; sessions in HttpOnly cookies; sign-in throttling','Working'],['Proof photos, signatures and attachments only served to signed-in users','Working'],['Encryption in transit (HTTPS)','Provided by your host'],['Microsoft Entra ID single sign-on','Not set up']]),true)+''}
+function admBackup(u){if(u.role!=='admin')return panel('Backup','','<p class="hint" style="margin:0">Only the Administrator can back up or restore data.</p>');
+  return'<div class="grid">'+panel('Back up','save a copy of everything','<p style="margin-top:0">This offline edition keeps all users, jobs, photos and settings in this browser on this device. Clearing the browser data deletes it. Download a backup regularly, and use it to move the data to another computer.</p><button class="btn pri" data-act="bk-save">'+ico('dl',15)+'Download backup</button><p class="hint" id="bk-where"></p>')
+   +panel('Restore','replace everything with a backup file','<p style="margin-top:0">Replaces all data on this device with the backup. Everyone is signed out; sign in again with an account from the backup.</p><label class="btn" style="width:max-content">Choose backup file<input type="file" accept=".json,application/json" data-restore hidden></label>')+'</div>'
+   +panel('Fresh start','delete everything on this device','<p style="margin-top:0">Deletes all users, jobs, vendors, drivers, rates and history on this device and starts again with only the administrator account (msyafirol / admin123) and the standard bases. Download a backup first if you may need the data.</p><button class="btn dng" data-act="bk-wipe">Delete all data</button>')}
+function pt(h,rows){return'<div class="tw"><table class="t"><thead><tr>'+h.map(x=>'<th>'+x+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(c=>'<td>'+esc(c)+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'}
+
+/* ---------- job board: new, current and completed jobs for each role ---------- */
+const JT={new:'New jobs',cur:'Current jobs',done:'Completed jobs'};
+const JHINT={hws:{new:'Waiting for HWS to validate',cur:'With a vendor, on the road or awaiting sign-off',done:'Closed by HWS'},vendor:{new:'Assign a driver',cur:'On the road or awaiting the store',done:'Confirmed, closed or rejected'},driver:{new:'Collect from the warehouse',cur:'Collected or on the way',done:'Delivered'},user:{new:'Submitted, waiting for a driver',cur:'On the way or awaiting your acceptance',done:'Accepted, closed or rejected'}};
+function jobStage(r,u){const s=statusOf(r);
+  if(isHWS(u))return s==='Request Created'?'new':s==='Completed'?'done':'cur';
+  if(u.role==='vendor')return s==='Pending Vendor Assignment'?'new':(s==='Completed'||s==='Rejected'||(s==='Accepted'&&r.t.vconfirm))?'done':'cur';
+  if(u.role==='driver')return s==='Driver Assigned'?'new':ACTIVE.includes(s)?'cur':'done';
+  return['Request Created','Pending Vendor Assignment'].includes(s)?'new':['Accepted','Completed','Rejected'].includes(s)?'done':'cur'}
+const lastTs=r=>Math.max(...EV.map(k=>r.t[k]||0));
+function jobCard(r){const st=statusOf(r),tgt=st==='Driver Assigned'?FROM(r):TO(r),go={'Driver Assigned':'Collect','Collected from Warehouse':'Start delivery','In Transit':'Deliver'}[st];
+  return'<div class="jc"><div class="row" style="justify-content:space-between"><span class="mono">'+r.no+'</span>'+pill(st)+'</div><div><b>'+esc(r.item)+' × '+r.qty+'</b>'+(r.prio!=='Standard'?' <span class="tag acc">'+r.prio+'</span>':'')+'<div class="hint">'+(st==='Driver Assigned'?'Collect at '+esc(FROM(r).name)+'<br>'+esc(FROM(r).address):'Deliver to '+esc(TO(r).name)+'<br>'+esc(TO(r).address))+'</div></div><div class="row" style="justify-content:space-between"><span class="hint">Collection slot '+fdt(r.sched)+'</span>'+slaPill(r)+'</div><div class="row">'+(go?'<button class="btn pri" data-act="open" data-id="'+r.id+'">'+go+'</button><a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+tgt.lat+','+tgt.lng+'">Navigate</a>':'<button class="btn sm" data-act="open" data-id="'+r.id+'">View details and proof</button>')+'</div></div>'}
+function jobBoard(rs){const u=me(),hk=isHWS(u)?'hws':u.role,g={new:[],cur:[],done:[]};rs.forEach(r=>g[jobStage(r,u)].push(r));
+  if(!g[S.jt])S.jt='new';const lim=S.jlim||10;
+  g.new.sort((a,b)=>a.t.created-b.t.created);g.cur.sort((a,b)=>lastTs(b)-lastTs(a));g.done.sort((a,b)=>lastTs(b)-lastTs(a));
+  const a=g[S.jt],cards=u.role==='driver',who=r=>u.role==='vendor'||u.role==='driver'?(r.driver&&DR(r.driver)?DR(r.driver).name:'No driver yet'):(r.vendor?V(r.vendor).name:'No vendor yet');
+  const empty={new:'No new jobs right now.',cur:'No job in progress.',done:'No completed jobs yet.'}[S.jt];
+  const body=!a.length?'<div class="empty">'+empty+'</div>':cards?'<div class="jobs">'+a.slice(0,lim).map(jobCard).join('')+'</div>'
+    :'<div class="tw"><table class="t"><thead><tr><th>Request</th><th>Route</th><th>Status</th><th class="hide-m">'+(u.role==='vendor'?'Driver':'Vendor')+'</th><th class="hide-m">Last update</th><th>SLA</th></tr></thead><tbody>'+a.slice(0,lim).map(r=>'<tr class="rw" data-act="open" data-id="'+r.id+'"><td><span class="mono">'+r.no+'</span><div class="hint">'+esc(r.item)+' × '+r.qty+'</div></td><td>'+esc(TO(r).name)+'<div class="hint">from '+esc(FROM(r).name)+'</div></td><td>'+pill(statusOf(r))+'</td><td class="hide-m">'+esc(who(r))+'</td><td class="hide-m">'+fdt(lastTs(r))+'</td><td>'+slaPill(r)+'</td></tr>').join('')+'</tbody></table></div>';
+  return'<section class="panel" style="margin-bottom:14px"><div class="hd"><h2>My jobs</h2><span>live · tap a job to act on it</span></div><div class="jtabs" role="tablist">'+Object.keys(JT).map(k=>'<button role="tab" data-act="jt" data-k="'+k+'" aria-selected="'+(S.jt===k)+'"><span class="jl">'+JT[k]+'</span><span class="jn">'+g[k].length+'</span><span class="jh">'+JHINT[hk][k]+'</span></button>').join('')+'</div><div class="jb">'+body+(a.length>lim?'<div style="margin-top:10px"><button class="btn sm" data-act="jmore">Show 10 more ('+(a.length-lim)+' left)</button></div>':'')+'</div></section>'}
+
+/* ---------- driver & regional user ---------- */
+function etaOf(r){const F=FROM(r),T=TO(r),km=kmBetween(F,T);const leg=crossSea(F,T)?24*H:(km/65+.5)*H;const start=r.t.transit||(r.t.collected?r.t.collected+.3*H:(r.sched||Date.now())+.5*H);return start+leg}
+function viewJobs(){const u=me(),rs=scope(),act=rs.filter(r=>ACTIVE.includes(statusOf(r)));
+  const m30=rs.filter(r=>r.t.delivered>Date.now()-30*D),dec=rs.filter(r=>r.t.decided&&r.t.decided>Date.now()-30*D);
+  return head('Driver','My jobs',esc(u.name)+' · '+esc(V(u.vendor).name))+jobBoard(rs)+'<div class="kpis">'+kpi('To do now',act.length,'Assigned to you','acc')+kpi('Delivered',m30.length,'Last 30 days','ok')+kpi('Accepted by stores',dec.length?pct(dec.filter(r=>!r.rejected).length,dec.length)+'%':'—','Last 30 days')+kpi('Within SLA',compliance(m30)+'%','Last 30 days')+'</div>'}
+function viewMine(){const u=me(),rs=scope(),bb=u.base?B(u.base):null,s=ST(bb?bb.state:'SGR');
+  const open=rs.filter(isOpen),tr=rs.filter(r=>ACTIVE.includes(statusOf(r))),aw=rs.filter(r=>statusOf(r)==='Delivered');
+  let h=head('My dashboard',bb?'Requests for '+esc(bb.name):'My requests',bb?s.name+' · '+ZN[ZONE(s)]:'','<button class="btn pri" data-act="nav" data-v="new">'+ico('plus',15)+'New request</button>');
+  h+=jobBoard(rs);
+  h+='<div class="kpis">'+kpi('Open requests',open.length,'Not yet closed','acc')+kpi('On the way',tr.length,'Assigned or in transit')+kpi('Awaiting your acceptance',aw.length,'Check the part and sign',aw.length?'warn':'')+kpi('Completed',rs.filter(r=>statusOf(r)==='Completed').length,'All time','ok')+kpi('Within SLA',compliance(rs)+'%','All your requests')+'</div>';
+  h+='<div class="grid">'+panel('Awaiting your acceptance','tap a request to review',aw.length?listTable(aw.slice(0,8)):'<div class="empty">Nothing to accept right now.</div>',!!aw.length)+panel('On the way','',tr.length?trackTable(tr.slice(0,8)):'<div class="empty">No delivery on the way.</div>',!!tr.length)+'</div>';
+  h+=panel('Recent requests','latest 10',rs.length?listTable(rs.slice(0,10)):'<div class="empty">No requests yet.</div>',!!rs.length);
+  return h}
+function trackTable(a){return'<div class="tw"><table class="t"><tbody>'+a.map(r=>{const d=r.driver?DR(r.driver):null;return'<tr class="rw" data-act="open" data-id="'+r.id+'"><td><span class="mono">'+r.no+'</span><div class="hint">'+esc(r.item)+'</div></td><td>'+pill(statusOf(r))+'</td><td>'+(d?esc(d.name)+'<div class="hint mono">'+esc(d.phone)+'</div>':'')+'</td><td class="hide-m">ETA '+fdt(etaOf(r))+'</td></tr>'}).join('')+'</tbody></table></div>'}
+
+/* ================= navigation ================= */
+function NAV(){const u=me();if(!u)return[];
+  if(isHWS(u))return[['Dashboards'],['overview','Executive overview','dash'],['ops','HWS operations','ops'],['map','State map','map'],['cost','Costing','cost'],['vendor','Vendor performance','vend'],['Operations'],['requests','Requests','list'],['new','New request','plus'],['sla','SLA management','clock'],['proofs','Proof documents','file'],['drivers','Drivers','truck'],['Reports'],['reports','Reports','chart'],['Administration'],['admin','Users, bases, rates','users'],['audit','Audit trail','shield']];
+  if(u.role==='vendor')return[['Vendor portal'],['vendor','Performance','dash'],['requests','Jobs','list'],['drivers','Drivers','truck']];
+  if(u.role==='driver')return[['Driver'],['jobs','My jobs','truck'],['requests','Job history','list']];
+  return[['My requests'],['mine','My dashboard','dash'],['requests','Request list','list'],['new','New request','plus']]}
+const home=()=>NAV()[1][0];
+const allowed=v=>NAV().some(n=>n[0]===v);
+function renderNav(){const u=me();const cnt={requests:scope().filter(isOpen).length};
+  $('#side').innerHTML=NAV().map(n=>n.length===1?'<div class="grp">'+n[0]+'</div>':'<button class="nv" data-act="nav" data-v="'+n[0]+'"'+(S.view===n[0]?' aria-current="page"':'')+'>'+ico(n[2])+'<span>'+n[1]+'</span>'+(cnt[n[0]]?'<span class="cnt">'+cnt[n[0]]+'</span>':'')+'</button>').join('')+'<div class="side-foot">Signed in as '+esc(u.name)+'<br>'+ROLE[u.role]+' · '+esc(scopeLbl(u))+'</div>'}
+function renderMain(){if(!allowed(S.view))S.view=home();
+  const map={overview:viewOverview,ops:viewOps,map:viewMap,cost:viewCost,vendor:viewVendor,requests:viewRequests,proofs:viewRequests,new:viewNew,sla:viewSLA,drivers:viewDrivers,reports:viewReports,audit:viewAudit,admin:viewAdmin,jobs:viewJobs,mine:viewMine};
+  $('#main').innerHTML=map[S.view]();
+  const nf=$('#nf');if(nf){nf.addEventListener('submit',submitNew);nrSync();nrFiles()}
+  const fu=$('#fu');if(fu){fu.addEventListener('submit',submitUser);$('#fu-role').addEventListener('change',syncUserForm);$('#fu-vendor').addEventListener('change',syncUserForm);syncUserForm()}
+  const fv=$('#fv');if(fv)fv.addEventListener('submit',submitVendor);
+  const fdd=$('#fd');if(fdd)fdd.addEventListener('submit',submitDriver);
+  const fb=$('#fb');if(fb)fb.addEventListener('submit',submitBase);
+  const frr=$('#fr');if(frr){frr.addEventListener('submit',submitRoute);frHint()}}
+function syncUserForm(){const r=$('#fu-role').value;$('#fu-vw').hidden=!['vendor','driver'].includes(r);$('#fu-dw').hidden=r!=='driver';$('#fu-bw').firstChild.textContent=r==='user'?'Store (required)':'Base (optional)';
+  if(r==='driver'){const v=$('#fu-vendor').value;const free=DB.drivers.filter(d=>d.vendor===v&&!DB.users.some(x=>x.driver===d.id));$('#fu-driver').innerHTML=free.length?free.map(d=>'<option value="'+d.id+'">'+esc(d.name)+'</option>').join(''):'<option value="">None without a login. Register under Drivers.</option>'}}
+function renderBadge(){const n=notifFor().filter(x=>!x.read).length;const b=$('#badge');if(b){b.hidden=!n;b.textContent=n>99?'99+':n}}
+function renderPop(){const l=$('#pop');if(!l)return;if(S.pop!=='acct')S.pwForm=false;if(!S.pop){l.hidden=true;return}l.hidden=false;const u=me();
+  if(S.pop==='bell'){const a=notifFor().slice(0,30);l.innerHTML='<div class="pop-h"><b>Notifications</b><button class="btn sm" data-act="readall">Mark all read</button></div>'+(a.length?a.map(n=>'<div class="nt'+(n.read?'':' u')+'" data-act="open" data-id="'+n.rid+'" data-n="'+n.id+'"><b>'+n.title+'</b><span>'+esc(n.text)+'</span><span class="ch">'+fdt(n.ts)+' · '+n.ch.join(' · ')+'</span></div>').join(''):'<div class="empty">No notifications.</div>')}
+  else l.innerHTML='<div class="pop-h"><div><b>'+esc(u.name)+'</b><div class="hint">'+ROLE[u.role]+' · '+esc(u.username)+'</div></div></div><div style="padding:10px 14px" class="hint">Access: '+esc(scopeLbl(u))+'</div>'+(S.pwForm?'<div class="f" style="padding:0 14px 12px"><label class="wide">Current password<input id="pw-cur" type="password" autocomplete="current-password"></label><label class="wide">New password (8+ characters)<input id="pw-new" type="password" autocomplete="new-password"></label><div class="wide row"><button class="btn pri sm" data-act="pwsave">Save password</button><button class="btn sm" data-act="pwform">Cancel</button></div><span class="err wide" id="pw-err" role="alert"></span></div>':'')+'<div class="row" style="padding:0 14px 12px"><button class="btn sm" data-act="sound" aria-pressed="'+sndOn()+'">Alert sound: '+(sndOn()?'On':'Off')+'</button>'+(window.Notification&&Notification.permission==='default'?'<button class="btn sm" data-act="desk">Allow desktop alerts</button>':window.Notification&&Notification.permission==='granted'?'<span class="hint">Desktop alerts on</span>':'')+'</div><div class="row" style="padding:0 14px 14px">'+(S.pwForm?'':'<button class="btn" data-act="pwform">Change password</button>')+'<button class="btn" data-act="logout">'+ico('out',15)+'Sign out</button></div>'}
+async function changePw(){const c=$('#pw-cur').value,n=$('#pw-new').value,e=$('#pw-err');if(n.length<8){e.textContent='Use at least 8 characters.';return}try{await api('/api/password',{current:c,next:n})}catch(x){e.textContent=x.message;return}S.pwForm=false;S.pop='';renderPop();toast('Password changed')}
+function shell(){const u=me();const ini=u.name.split(/[\s.]+/).filter(w=>/^[A-Z]/.test(w)).slice(0,2).map(w=>w[0]).join('');
+  $('#app').innerHTML='<header class="top"><div class="top-in"><button class="ib menu-btn" data-act="menu" aria-label="Open navigation">'+ico('menu',20)+'</button><div class="brand"><span class="logo">'+ico('box',17)+'</span><span class="bn">HWOTG<span class="bl"> Delivery Tracking</span><small>Hardware Support · Spare parts</small></span></div><div class="search" id="sbox"><input id="q" type="search" placeholder="Search request no., driver, state, store, vendor or date" aria-label="Global search"></div><div class="sp"></div><button class="ib show-m" data-act="sbox" aria-label="Search">'+ico('search',19)+'</button><button class="ib" data-act="bell" aria-label="Notifications">'+ico('bell',19)+'<b id="badge" hidden></b></button><button class="av" data-act="acct" aria-label="Account"><i>'+esc(ini)+'</i><div><span>'+esc(u.name)+'</span><small>'+ROLE[u.role]+'</small></div></button></div></header><div class="layout"><nav class="side" id="side" aria-label="Main"></nav><main id="main"></main></div><div class="pop" id="pop" hidden></div><div id="scrimNav"></div>';
+  $('#q').addEventListener('input',e=>{S.q=e.target.value;if(!['requests','audit','proofs'].includes(S.view)&&S.q){S.view='requests';renderNav()}S.lim=25;renderMain()})}
+function full(){if(!me()){renderLogin();return}renderNav();renderMain();renderBadge();renderPop()}
+function setNav(open){S.nav=open;const sd=$('#side');if(sd)sd.classList.toggle('open',open);const sc=$('#scrimNav');if(sc)sc.innerHTML=open?'<div class="scrim" data-act="menu"></div>':''}
+
+/* ================= login ================= */
+function renderLogin(){closeDrawer();
+  $('#app').innerHTML='<div class="login"><section class="lg-brand"><div><div class="brand"><span class="logo">'+ico('box',17)+'</span><span>HWOTG Delivery Tracking<small>Hardware Support · Spare parts</small></span></div><h1>Every spare part, from warehouse to store, on one record.</h1><p>Requests, vendor assignment, proof of collection and delivery, SLA and cost across 16 states. Shared by HWS, vendors, drivers and regional stores.</p></div><div class="lg-flow"><div><b>Request</b>Store raises it</div><div><b>Assign</b>HWS and vendor</div><div><b>Deliver</b>Driver with proof</div><div><b>Accept</b>Store signs off</div></div></section><section class="lg-form"><form class="lg-card" id="lf"><h2>Sign in</h2><label>Username<input id="lu" autocomplete="username" required></label><label>Password<input id="lp" type="password" autocomplete="current-password" required></label><button class="btn pri" type="submit" style="justify-content:center;height:40px">Sign in</button><div class="err" id="le" role="alert"></div><p class="hint" style="margin:0">Accounts are created by the Administrator. Forgot your password? Ask the Administrator to reset it.</p>'+(LOCAL?'<p class="hint" style="margin:0">Offline edition. Everything is saved in this browser on this device. A new install starts with msyafirol / admin123.</p>':'')+'</form></section></div>';
+  $('#lf').addEventListener('submit',async e=>{e.preventDefault();const un=$('#lu').value.trim().toLowerCase(),pw=$('#lp').value,bt=$('#lf button[type=submit]');bt.disabled=true;$('#le').textContent='';
+    try{await api('/api/login',{username:un,password:pw});await loadData()}catch(x){$('#le').textContent=x.message;bt.disabled=false;return}
+    S.view=home();S.q='';resetF();shell();full();checkAlerts();window.scrollTo(0,0)})}
+const resetF=()=>{S.f={status:'',state:'',region:'',sla:'',driver:'',vendor:'',from:'',to:''};S.lim=25;S.costLim=20;S.form=null;S.mapSel=null;S.nr={}};
+
+/* ================= drawer ================= */
+const NEXT={'Request Created':'HWS validates the request and selects a vendor.','Pending Vendor Assignment':'The vendor admin assigns a driver and sets the collection slot.','Driver Assigned':'The driver collects the part from the warehouse.','Collected from Warehouse':'The driver starts the delivery.','In Transit':'The driver delivers to the store and captures proof.','Delivered':'The store checks the part and accepts or rejects it.','Rejected':'HWS re-dispatches the job or escalates.','Completed':'This job is closed.'};
+function nextText(r){const s=statusOf(r);if(s==='Accepted')return r.t.vconfirm?'HWS validates and closes the job.':'The vendor admin confirms completion.';return NEXT[s]}
+function stageList(r){const rej=r.rejected&&r.t.decided;const L=[['created','Request created'],['validated','Sent to vendor'],['assigned','Driver assigned'],['collected','Collected from warehouse'],['transit','In transit'],['delivered','Delivered to store'],['decided',rej?'Rejected by store':'Accepted by store'],['vconfirm','Vendor confirmed'],['completed','Completed by HWS']];
+  let cur=true;
+  return'<ol class="tl">'+L.map(l=>{const done=!!r.t[l[0]];let c=done?'d':'';const after=rej&&EV.indexOf(l[0])>6;if(!done&&cur&&!after){c='c';cur=false}if(l[0]==='decided'&&rej&&done)c='x2';if(after)c='';
+    return'<li class="'+c+'"><i></i><div><div class="n">'+l[1]+'</div><div class="m">'+(done?fdt(r.t[l[0]])+' · '+esc(r.who[l[0]]||''):(c==='c'?'Waiting':''))+(r.notes[l[0]]?' · '+esc(r.notes[l[0]]):'')+'</div></div></li>'}).join('')+'</ol>'}
+function proofBox(title,p,kind,r){if(!p)return'<div class="ph-box"><b>'+title+'</b><p class="hint" style="margin:4px 0 0">Not captured yet.</p></div>';
+  const img=p.photo||sample('Photo · '+r.no,kind),s=ST(r.st),dist=Math.round(hav(p.gps,kind==='col'?FROM(r):TO(r))*1000);
+  return'<div class="ph-box"><div class="row" style="justify-content:space-between"><b>'+title+'</b><button class="btn sm" data-act="dlphoto" data-k="'+kind+'">'+ico('dl',14)+'Photo</button></div><img src="'+img+'" alt="'+title+' photo"><dl class="kv"><div><dt>Timestamp</dt><dd>'+fdt(p.ts)+'</dd></div><div><dt>Driver</dt><dd>'+esc(p.driver)+'</dd></div><div><dt>GPS</dt><dd class="mono">'+p.gps.lat+', '+p.gps.lng+'</dd></div>'+(kind==='del'?'<div><dt>Recipient</dt><dd>'+esc(p.recipient)+'</dd></div><div><dt>Distance to destination</dt><dd>'+dist+' m '+(dist<=300?'<span class="sla green">Verified</span>':'<span class="sla amber">Check</span>')+'</dd></div>':'<div><dt>Distance to collection point</dt><dd>'+dist+' m</dd></div>')+'</dl>'+(kind==='del'?'<div class="hint" style="margin-top:8px">Signature</div><img class="sigimg" src="'+(p.sig||sigSample())+'" alt="Recipient signature" style="max-height:80px">':'')+'</div>'}
+function sample(label,kind){const c=kind==='col'?'#c9d6e4':'#d8d2ec';return'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="480" height="200"><rect width="480" height="200" fill="'+c+'"/><path d="M190 80l50-24 50 24v52l-50 24-50-24z M190 80l50 24 50-24 M240 104v52" fill="none" stroke="#51657d" stroke-width="3"/><text x="240" y="184" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#3b4b5e">'+label+' (sample)</text></svg>')}
+function sigSample(){return'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="240" height="80"><rect width="240" height="80" fill="#ffffff"/><path d="M12 54c14-34 22-38 26-30s-10 34 2 30 16-26 26-22-6 24 6 20 14-18 24-14 4 14 18 10 30-14 50-10" fill="none" stroke="#1a2740" stroke-width="2.4" stroke-linecap="round"/></svg>')}
+function actions(r){const st=statusOf(r),u=me(),s=ST(r.st);let h='';const err='<div class="err" id="ae" role="alert"></div>';
+  if(isHWS(u)){
+    if(st==='Request Created'){const cov=DB.vendors.filter(v=>v.active&&v.coverage.includes(s.region));h+=cov.length?'<div class="f"><label>Vendor covering '+s.region+'<select id="a-vendor">'+cov.map(v=>{const c=costOf(Object.assign({},r,{vendor:v.id}));return'<option value="'+v.id+'">'+esc(v.name)+' · est. '+rm(c.total)+'</option>'}).join('')+'</select></label><div class="wide"><button class="btn pri" data-act="do" data-d="validate">Validate and send to vendor</button></div></div>'+err:'<p class="err">No active vendor covers '+s.region+'. Register or activate one under Administration.</p>'}
+    if(st==='Rejected')h+='<p style="margin-top:0">Reason: '+esc(r.notes.decided||'—')+'</p><button class="btn pri" data-act="do" data-d="redispatch">Re-dispatch to vendor</button>';
+    if(st==='Accepted'&&r.t.vconfirm)h+='<button class="btn pri" data-act="do" data-d="close">Validate and close job</button>';
+    const ex=[];if(isOpen(r)&&isLead(u)&&!r.escalated)ex.push('<button class="btn dng" data-act="do" data-d="escalate">Escalate to vendor</button>');if((r.proof.collection||r.proof.delivery)&&!r.verified)ex.push('<button class="btn" data-act="do" data-d="verify">Mark proof verified</button>');
+    if(ex.length)h+=(h?'<div style="height:10px"></div>':'')+'<div class="row">'+ex.join('')+'</div>'}
+  if(u.role==='vendor'){
+    if(st==='Pending Vendor Assignment'){const ds=DB.drivers.filter(d=>d.vendor===u.vendor&&d.active);const d0=new Date(Date.now()+H-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16);
+      h+=ds.length?'<div class="f"><label>Driver<select id="a-driver">'+ds.map(d=>'<option value="'+d.id+'">'+esc(d.name)+' ('+DB.reqs.filter(x=>x.driver===d.id&&ACTIVE.includes(statusOf(x))).length+' live)</option>').join('')+'</select></label><label>Collection slot<input id="a-sched" type="datetime-local" value="'+d0+'"></label><div class="wide"><button class="btn pri" data-act="do" data-d="assign">Assign driver</button></div></div>'+err:'<p class="err">No active driver. Ask HWS to register one.</p>'}
+    if(st==='Accepted'&&!r.t.vconfirm)h+='<button class="btn pri" data-act="do" data-d="vconfirm">Confirm completion</button>'}
+  if(u.role==='driver'){
+    if(st==='Driver Assigned')h+='<div class="f"><label>Scan or type request number<input id="a-scan" placeholder="HWOTG-…" autocomplete="off"></label><label>Driver<input value="'+esc(u.name)+'" readonly></label><div class="wide row"><button class="btn sm" data-act="scan">Scan label</button><button class="btn sm" data-act="gps" data-t="wh">Capture GPS</button><span class="hint" id="gps-o">GPS not captured</span></div><label class="wide">Collection photo<input id="a-photo" type="file" accept="image/*" capture="environment" data-up="col"></label><div class="wide" id="prev"></div><div class="wide"><button class="btn pri" data-act="do" data-d="collect">Upload proof of collection</button></div></div>'+err;
+    if(st==='Collected from Warehouse')h+='<button class="btn pri" data-act="do" data-d="start">Start delivery</button>';
+    if(st==='In Transit')h+='<div class="f"><label>Recipient name<input id="a-rcp" value="'+esc(r.rq?r.rq.name:'')+'"></label><div class="row" style="align-self:end"><button class="btn sm" data-act="gps" data-t="store">Capture GPS</button></div><span class="hint wide" id="gps-o">GPS not captured</span><label class="wide">Delivery photo<input id="a-photo" type="file" accept="image/*" capture="environment" data-up="del"></label><div class="wide" id="prev"></div><div class="wide"><div class="hint" style="margin-bottom:4px">Recipient signature</div><canvas id="sig"></canvas><button class="btn sm" data-act="sigclr" style="margin-top:6px">Clear signature</button></div><div class="wide"><button class="btn pri" data-act="do" data-d="deliver">Complete delivery</button></div></div>'+err}
+  if(u.role==='user'&&st==='Delivered')h+='<div class="f"><label class="wide">Remarks<textarea id="a-rem" placeholder="Condition, quantity, anything wrong"></textarea></label><label class="wide">Acknowledgement document (optional)<input id="a-ack" type="file" data-up="ack"></label><div class="wide"><div class="hint" style="margin-bottom:4px">Sign the acceptance form</div><canvas id="sig"></canvas><button class="btn sm" data-act="sigclr" style="margin-top:6px">Clear signature</button></div><div class="wide row"><button class="btn pri" data-act="do" data-d="accept">Accept item</button><button class="btn dng" data-act="do" data-d="reject">Reject item</button></div></div>'+err;
+  return h}
+function renderDrawer(){const r=DB.reqs.find(x=>x.id===S.sel),L=$('#layer');if(!r){L.innerHTML='';return}
+  const u=me(),st=statusOf(r),dv=r.driver?DR(r.driver):null,a=actions(r),s=ST(r.st),F=FROM(r),T=TO(r),rq=r.rq||{};
+  let tr='';if(st==='In Transit'&&dv){const eta=etaOf(r),p=Math.max(0,Math.min(100,Math.round((Date.now()-r.t.transit)/(eta-r.t.transit)*100)));tr=panel('Live delivery',Date.now()>eta?'Past expected arrival':'On the way','<dl class="kv"><div><dt>Driver</dt><dd>'+esc(dv.name)+'</dd></div><div><dt>Contact</dt><dd class="mono">'+esc(dv.phone)+'</dd></div><div><dt>Vehicle</dt><dd>'+esc(dv.vehicle+' · '+dv.plate)+'</dd></div><div><dt>Expected arrival</dt><dd>'+fdt(eta)+'</dd></div><div><dt>Progress</dt><dd>'+p+'%</dd></div></dl><div class="mt" style="grid-template-columns:1fr;margin:12px 0 0"><div class="tr"><i class="'+(p>=100?'r':'g')+'" style="width:'+p+'%"></i></div></div>')}
+  const ms=slaOf(r).ms.map(m=>{const c=m.st==='met'||m.st==='ok'?'g':m.st==='near'?'a':'r';return'<div class="mt"><span>'+m.n+'</span><div class="tr"><i class="'+c+'" style="width:'+Math.min(100,m.h/m.tg*100)+'%"></i></div><span style="text-align:right">'+dur(m.h)+' / '+m.tg+' h</span></div>'}).join('');
+  const c=isHWS(u)?costView(r):null;
+  const costP=c?panel('Cost',(c.final?'Actual, fixed at closing':'Estimate at current rates')+' · '+(c.basis||'Formula').toLowerCase(),'<div class="tw"><table class="t"><tbody>'+(c.basis==='Route rate'?'<tr><td>Route rate<div class="hint">'+esc(F.name)+' → '+esc(T.name)+'</div></td><td class="num">'+rm(c.base,2)+'</td></tr>':'<tr><td>Base fee</td><td class="num">'+rm(c.base,2)+'</td></tr><tr><td>Distance ('+c.km+' km'+(crossSea(F,T)?' last mile':'')+')</td><td class="num">'+rm(c.dist,2)+'</td></tr>')+(c.toll?'<tr><td>Toll</td><td class="num">'+rm(c.toll,2)+'</td></tr>':'')+(c.air?'<tr><td>Air freight</td><td class="num">'+rm(c.air,2)+'</td></tr>':'')+(c.sur?'<tr><td>'+r.prio+' surcharge</td><td class="num">'+rm(c.sur,2)+'</td></tr>':'')+(c.red?'<tr><td>Re-dispatch</td><td class="num">'+rm(c.red,2)+'</td></tr>':'')+'</tbody><tfoot><tr><td>Total</td><td class="num">'+rm(c.total,2)+'</td></tr></tfoot></table></div>',true):(isHWS(u)?panel('Cost','','<p class="hint" style="margin:0">Costed once a vendor is selected.</p>'):'');
+  const ptx=(lbl,b)=>'<div><dt>'+lbl+'</dt><dd>'+esc(b.name)+'<div class="hint" style="font-weight:400">'+esc(b.address)+'</div><a class="hint" href="'+gmap(b)+'" target="_blank" rel="noopener">Open in Google Maps</a></dd></div>';
+  const reqP=panel('Request','','<dl class="kv">'+ptx('1. Collection point',F)+ptx('2. Destination',T)+'<div><dt>3. Requestor</dt><dd>'+esc(rq.name||r.who.created||'')+'<div class="hint mono" style="font-weight:400">'+esc(rq.phone||'')+'</div><div class="hint" style="font-weight:400">'+esc(rq.email||'')+'</div></dd></div><div><dt>4. HWS PIC</dt><dd>'+esc(r.picName||'—')+'</dd></div><div><dt>5. Quantity</dt><dd>'+r.qty+'</dd></div><div><dt>6. Priority</dt><dd>'+r.prio+'</dd></div><div><dt>Item or remarks</dt><dd>'+esc(r.item)+'</dd></div><div><dt>Distance</dt><dd>'+(crossSea(F,T)?'Air freight + 18 km':kmBetween(F,T)+' km by road')+'</dd></div><div><dt>Created</dt><dd>'+fdt(r.t.created)+'</dd></div><div><dt>Vendor</dt><dd>'+esc(r.vendor?V(r.vendor).name:'Not assigned')+'</dd></div><div><dt>Driver</dt><dd>'+(dv?esc(dv.name)+'<div class="hint mono" style="font-weight:400">'+esc(dv.phone)+'</div>':'Not assigned')+'</dd></div>'+(r.sched?'<div><dt>Collection slot</dt><dd>'+fdt(r.sched)+'</dd></div>':'')+'</dl>'+(rq.address?'<p class="hint" style="margin:10px 0 0">Requestor address: '+esc(rq.address)+'</p>':'')+'<div style="margin-top:12px">'+miniMap([{b:F,c:'from'},{b:T,c:'to'}])+'</div>');
+  L.innerHTML='<div class="ov" data-act="close"></div><aside class="dr" role="dialog" aria-label="Request '+r.no+'"><div class="dr-h"><span class="mono" style="font-size:15px">'+r.no+'</span>'+pill(st)+slaPill(r)+(r.escalated?'<span class="sla red">Escalated</span>':'')+'<button class="btn sm x" data-act="close">Close</button></div><div class="dr-b"><div class="next"><b>Next:</b> '+nextText(r)+'</div>'+(a?panel('Your action','',a):'')+(u.role==='admin'?adminPanel(r):'')+tr+reqP+attPanel(r)
+   +panel('Progress','',stageList(r))+panel('SLA',ZN[ZONE(s)],ms)+costP
+   +panel('Proof of collection and delivery',r.verified?'Verified by HWS':'','<div style="display:grid;gap:10px">'+proofBox('Collection proof',r.proof.collection,'col',r)+proofBox('Delivery proof',r.proof.delivery,'del',r)+((r.proof.collection||r.proof.delivery)?'<button class="btn" data-act="proofpdf" style="width:max-content">'+ico('dl',15)+'Download proof (PDF)</button>':'')+'</div>')
+   +panel('Activity','','<ul class="tl">'+hist(r).reverse().slice(0,14).map(e=>'<li class="d"><i></i><div><div class="n">'+esc(e.action)+'</div><div class="m">'+iso(e.ts)+' · '+esc(e.user)+(e.remarks?' · '+esc(e.remarks):'')+'</div></div></li>').join('')+'</ul>')+'</div></aside>';
+  initSig()}
+function openDrawer(id){const r=DB.reqs.find(x=>x.id===id);if(!r||!scope().includes(r)){toast('This request is outside your access.');return}S.sel=id;S.tmp={};renderDrawer();const d=$('.dr');if(d)d.scrollTop=0}
+function closeDrawer(){S.sel=null;S.tmp={};const l=$('#layer');if(l)l.innerHTML=''}
+
+/* ---------- signature & photo ---------- */
+function initSig(){const c=$('#sig');if(!c)return;const ratio=window.devicePixelRatio||1,b=c.getBoundingClientRect();c.width=Math.max(1,b.width*ratio);c.height=Math.max(1,b.height*ratio);const x=c.getContext('2d');x.scale(ratio,ratio);x.lineWidth=2.2;x.lineCap='round';x.strokeStyle='#14213a';let dn=false;
+  const pos=e=>{const r=c.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]};
+  c.addEventListener('pointerdown',e=>{dn=true;try{c.setPointerCapture(e.pointerId)}catch(x2){}const p=pos(e);x.beginPath();x.moveTo(p[0],p[1]);S.tmp.sig=true});
+  c.addEventListener('pointermove',e=>{if(!dn)return;const p=pos(e);x.lineTo(p[0],p[1]);x.stroke()});
+  const up=()=>{dn=false};c.addEventListener('pointerup',up);c.addEventListener('pointercancel',up)}
+function readImg(file,cb){const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,900/Math.max(im.width,im.height)),cv=document.createElement('canvas');cv.width=im.width*k;cv.height=im.height*k;cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);cb(cv.toDataURL('image/jpeg',.72))};im.onerror=()=>cb(null);im.src=fr.result};fr.readAsDataURL(file)}
+
+/* ================= workflow ================= */
+function toast(m){let t=$('#toast');if(t)t.remove();t=document.createElement('div');t.id='toast';t.className='toast';t.setAttribute('role','status');t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),3600)}
+function fail(m){const e=$('#ae');if(e)e.textContent=m}
+function stamp(r,k,who,note){r.t[k]=Date.now();r.who[k]=who;if(note)r.notes[k]=note}
+function doAction(d){const r=DB.reqs.find(x=>x.id===S.sel);if(!r)return;const u=me();
+  if(d==='validate'){r.vendor=$('#a-vendor').value;stamp(r,'validated',u.name,'Vendor '+V(r.vendor).name);notify(r,'validated')}
+  else if(d==='assign'){const id=$('#a-driver').value,sv=$('#a-sched').value;if(!id)return fail('Choose a driver.');if(!sv)return fail('Set a collection slot.');r.driver=id;r.sched=new Date(sv).getTime();stamp(r,'assigned',u.name,'Slot '+fdt(r.sched));notify(r,'assigned')}
+  else if(d==='collect'){const sc=($('#a-scan').value||'').trim().toUpperCase();if(sc!==r.no)return fail('The scanned number does not match this request ('+r.no+').');if(!S.tmp.gps)return fail('Capture GPS first.');if(!S.tmp.col)return fail('Add a collection photo.');
+    r.proof.collection={gps:S.tmp.gps,ts:Date.now(),driver:u.name,photo:S.tmp.col};stamp(r,'collected',u.name,S.tmp.gpsSim?'GPS simulated':'');notify(r,'collected')}
+  else if(d==='start'){stamp(r,'transit',u.name);notify(r,'transit')}
+  else if(d==='deliver'){if(!S.tmp.gps)return fail('Capture GPS at the store first.');if(!S.tmp.del)return fail('Add a delivery photo.');if(!S.tmp.sig)return fail('Get the recipient signature.');const rc=($('#a-rcp').value||'').trim();if(!rc)return fail('Enter the recipient name.');
+    const far=hav(S.tmp.gps,TO(r))>.3;r.gpsFlag=far;r.proof.delivery={gps:S.tmp.gps,ts:Date.now(),driver:u.name,recipient:rc,photo:S.tmp.del,sig:$('#sig').toDataURL('image/png')};stamp(r,'delivered',u.name,far?'GPS more than 300 m from the destination, flagged for HWS':'');notify(r,'delivered')}
+  else if(d==='accept'){if(!S.tmp.sig)return fail('Sign the acceptance form.');const rm2=$('#a-rem').value.trim();r.rejected=false;stamp(r,'decided',u.name,rm2||(S.tmp.ack?'Acknowledgement attached: '+S.tmp.ack:''));notify(r,'accepted')}
+  else if(d==='reject'){const rm2=$('#a-rem').value.trim();if(!rm2)return fail('Add remarks to explain the rejection.');r.rejected=true;stamp(r,'decided',u.name,rm2);r.cost=costOf(r);notify(r,'rejected')}
+  else if(d==='vconfirm'){stamp(r,'vconfirm',u.name);notify(r,'vconfirm')}
+  else if(d==='close'){stamp(r,'completed',u.name);r.cost=costOf(r);notify(r,'completed')}
+  else if(d==='redispatch'){EV.slice(1).forEach(k=>{if(r.t[k])r.log.push({ts:r.t[k],user:r.who[k]||'',role:EROLE[k],action:evLabel(r,k)+' (earlier attempt)',remarks:r.notes[k]||''});delete r.t[k];delete r.who[k];delete r.notes[k]});r.redisp=(r.redisp||0)+1;r.rejected=false;r.cost=null;r.vendor=null;r.driver=null;r.sched=null;r.proof={};r.verified=false;r.gpsFlag=false;r.log.push({ts:Date.now(),user:u.name,role:'HWS',action:'Re-dispatched after rejection'});notify(r,'redispatch')}
+  else if(d==='escalate'){r.escalated=true;r.log.push({ts:Date.now(),user:u.name,role:ROLE[u.role],action:'Escalated to vendor'});notify(r,'sla')}
+  else if(d==='verify'){r.verified=true;r.log.push({ts:Date.now(),user:u.name,role:'HWS',action:'Proof documents verified'})}
+  toast({validate:'Sent to vendor',assign:'Driver assigned',collect:'Collection proof uploaded',start:'Delivery started',deliver:'Delivery completed with proof',accept:'Item accepted',reject:'Item rejected',vconfirm:'Completion confirmed',close:'Job closed',redispatch:'Re-dispatched',escalate:'Escalated',verify:'Proof verified'}[d]);beep('done');changed()}
+function changed(){S.tmp={};save();renderDrawer();renderNav();renderMain();renderBadge();renderPop()}
+
+/* ---------- administrator undo: one workflow step at a time, newest first ---------- */
+const UNDO={validated:'vendor selection',assigned:'driver assignment',collected:'collection',transit:'delivery start',delivered:'delivery',decided:'store decision',vconfirm:'vendor confirmation',completed:'job closing'};
+const lastStage=r=>EV.filter(k=>r.t[k]).pop();
+function undoStep(r,u,why){const k=lastStage(r);if(!k||k==='created')return'';const lbl=evLabel(r,k);
+  delete r.t[k];delete r.who[k];delete r.notes[k];
+  if(k==='validated')r.vendor=null;
+  if(k==='assigned'){r.driver=null;r.sched=null}
+  if(k==='collected'){delete r.proof.collection;r.verified=false}
+  if(k==='delivered'){delete r.proof.delivery;r.gpsFlag=false;r.verified=false}
+  if(k==='decided')r.rejected=false;
+  r.cost=(r.t.completed||(r.rejected&&r.t.decided))?costOf(r):null;
+  r.log.push({ts:Date.now(),user:u.name,role:ROLE[u.role],action:'Undone: '+lbl,remarks:why});
+  notify(r,'undo',0,'Step undone: '+UNDO[k]);return UNDO[k]}
+function adminPanel(r){const k=lastStage(r),why='<label class="hint" style="display:grid;gap:4px;margin-top:10px">Reason (optional, saved in the activity log)<input id="undo-why" placeholder="e.g. driver tapped the wrong job"></label>';
+  return panel('Administrator controls','undo a step or correct the record','<div class="row">'+(k&&k!=='created'?'<button class="btn dng" data-act="undo">Undo '+esc(UNDO[k])+'</button>':'<span class="hint">Only the request itself is left. Delete it if it was raised by mistake.</span>')
+    +(r.verified?'<button class="btn" data-act="adm-fix" data-k="unverify">Undo proof verification</button>':'')+(r.escalated?'<button class="btn" data-act="adm-fix" data-k="unesc">Clear escalation</button>':'')+'<button class="btn" data-act="delreq">Delete request</button></div>'+why
+    +'<p class="hint" style="margin:8px 0 0">Steps are undone one at a time, newest first, so you can go back as far as needed. Photos, signature and cost captured in an undone step are cleared, and everyone on the job is notified.</p>')}
+function adminDo(a,k){const r=DB.reqs.find(x=>x.id===S.sel),u=me();if(!r||u.role!=='admin')return;const w=$('#undo-why'),why=w?w.value.trim():'';
+  if(a==='undo'){const s=undoStep(r,u,why);if(!s)return;toast('Undone: '+s)}
+  else if(a==='unverify'){r.verified=false;r.log.push({ts:Date.now(),user:u.name,role:ROLE[u.role],action:'Undone: proof verification',remarks:why});toast('Proof verification undone')}
+  else if(a==='unesc'){r.escalated=false;r.log.push({ts:Date.now(),user:u.name,role:ROLE[u.role],action:'Escalation cleared',remarks:why});toast('Escalation cleared')}
+  else if(a==='delreq'){DB.reqs=DB.reqs.filter(x=>x!==r);DB.notifs=DB.notifs.filter(n=>n.rid!==r.id);audit('Request deleted',r.no+(why?' · '+why:''));closeDrawer();toast('Deleted '+r.no)}
+  beep('done');changed()}
+async function submitNew(e){e.preventDefault();nrSync();const u=me(),n=S.nr,err=$('#nf-err'),qty=parseInt($('#nf-qty').value,10);
+  if(!n.from||!n.to){err.textContent='Choose a collection point and a destination.';return}if(n.from===n.to){err.textContent='The collection point and destination must be different.';return}
+  const ru=DB.users.find(x=>x.id===n.rq);if(!ru){err.textContent='Choose the requestor.';return}const pu=DB.users.find(x=>x.id===n.pic);if(!pu){err.textContent='Choose the HWS PIC.';return}if(!(qty>0)){err.textContent='Enter a quantity of 1 or more.';return}
+  const bt=$('#nf button[type=submit]');bt.disabled=true;let id;try{id=(await api('/api/seq',{})).id}catch(x){err.textContent=x.message;bt.disabled=false;return}
+  const T=B(n.to),now=Date.now(),d=new Date(now),note=$('#nf-note').value.trim();
+  const r={id,no:'HWOTG-'+String(d.getFullYear()).slice(2)+p2(d.getMonth()+1)+'-'+id,st:T.state,from:n.from,to:n.to,item:note||'Not specified',qty,prio:$('#nf-prio').value,requestor:ru.id,rq:{name:ru.name,phone:ru.phone||'',email:ru.email||'',address:ru.address||T.address},pic:pu.id,picName:pu.name,vendor:null,driver:null,t:{created:now},who:{created:ru.name},notes:{},rejected:false,log:[],proof:{},files:[],verified:false,escalated:false,sched:null,redisp:0,cost:null,gpsFlag:false};
+  ['pickup','drop'].forEach(k=>n.files[k].forEach(f=>r.files.push(Object.assign({id:uid('f'),kind:k,by:u.name,ts:now},f))));
+  if(u.id!==ru.id)r.log.push({ts:now,user:u.name,role:ROLE[u.role],action:'Raised on behalf of '+ru.name,remarks:'HWS PIC: '+pu.name});
+  DB.reqs.unshift(r);notify(r,'created');
+  save();
+  S.nr={};toast('Created '+r.no);S.view='requests';renderNav();renderMain();openDrawer(r.id)}
+function submitUser(e){e.preventDefault();const g=id=>$(id).value.trim();const role=g('#fu-role'),name=g('#fu-name'),un=g('#fu-user').toLowerCase(),phone=g('#fu-phone'),base=g('#fu-base');const er=$('#fu-err');
+  if(!name||!un){er.textContent='Enter a name and username.';return}if(!/^[a-z0-9._-]+$/.test(un)){er.textContent='Usernames can use letters, numbers, dots, dashes and underscores.';return}if(DB.users.some(x=>x.username===un)){er.textContent='That username is taken.';return}
+  if(!phone){er.textContent='Enter a mobile phone number.';return}if(role==='user'&&!base){er.textContent='Choose the store for a regional user.';return}
+  const x={id:uid('U'),username:un,name,role,pw:g('#fu-pw')||'welcome123',email:g('#fu-email'),phone,address:g('#fu-addr')||(base?B(base).address:''),base,active:true};
+  if((role==='vendor'||role==='driver')&&!g('#fu-vendor')){er.textContent='Register the vendor first, under the Vendors tab.';return}
+  if(role==='vendor')x.vendor=g('#fu-vendor');if(role==='driver'){x.vendor=g('#fu-vendor');x.driver=g('#fu-driver');if(!x.driver){er.textContent='Register the driver first, under the Drivers tab.';return}}
+  DB.users.push(x);audit('User registered',name+' ('+ROLE[role]+')');save();S.form=null;toast('Registered '+name+'. Username: '+un);renderMain()}
+function submitBase(e){e.preventDefault();const g=id=>$(id).value.trim(),er=$('#fb-err');const name=g('#fb-name'),addr=g('#fb-addr'),st=g('#fb-state');if(!name||!addr){er.textContent='Enter a name and an address.';return}
+  let lat,lng;const ll=g('#fb-ll');if(ll){const m=ll.match(/(-?\d+(?:\.\d+)?)\s*[,\s]\s*(-?\d+(?:\.\d+)?)/);if(!m){er.textContent='Coordinates should look like 3.0738, 101.5183.';return}lat=+m[1];lng=+m[2];if(lat<0.5||lat>7.6||lng<99.5||lng>119.5){er.textContent='Those coordinates are outside Malaysia.';return}}else{const s=ST(st);lat=s.lat;lng=s.lng}
+  DB.bases.push({id:uid('B'),name,type:g('#fb-type'),address:addr,state:st,lat:+lat.toFixed(5),lng:+lng.toFixed(5),phone:g('#fb-phone'),active:true});audit('Base registered',name+' · '+ST(st).name);save();S.form=null;toast('Registered '+name);renderMain()}
+function submitRoute(e){e.preventDefault();const g=id=>$(id).value.trim(),er=$('#fr-err');const from=g('#fr-from'),to=g('#fr-to'),vendor=g('#fr-vendor'),price=parseFloat(g('#fr-price')),hours=parseFloat(g('#fr-hours'))||0;
+  if(from===to){er.textContent='Point 1 and point 2 must be different.';return}if(isNaN(price)||price<0){er.textContent='Enter the price per job.';return}
+  const lbl=B(from).name+' → '+B(to).name+(vendor?' · '+V(vendor).name:' · any vendor')+' · RM '+price.toFixed(2);
+  const ex=DB.routes.find(x=>x.from===from&&x.to===to&&x.vendor===vendor);if(ex){ex.price=price;ex.hours=hours;audit('Route rate updated',lbl)}else{DB.routes.push({id:uid('R'),from,to,vendor,price,hours,active:true});audit('Route rate added',lbl)}
+  save();S.form=null;toast(ex?'Route rate updated':'Route rate added');renderMain()}
+function delRecord(k,id){const u=me();if(u.role!=='admin'){toast('Only the Administrator can delete.');return}
+  if(k==='user'){if(id===u.id){toast('You cannot delete your own account.');return}const i=DB.users.findIndex(x=>x.id===id);if(i<0)return;const x=DB.users[i];DB.users.splice(i,1);audit('User deleted',x.name+' ('+ROLE[x.role]+')');toast('Deleted '+x.name+'. Their past requests keep the contact details.')}
+  else if(k==='base'){const b=DB.bases.find(x=>x.id===id);if(!b)return;const used=DB.reqs.filter(r=>r.from===id||r.to===id).length;if(used){b.active=false;audit('Base removed',b.name+' (kept on '+used+' existing jobs)');toast(b.name+' is removed from lists. It stays on '+used+' existing jobs.')}else{DB.bases.splice(DB.bases.indexOf(b),1);DB.routes=DB.routes.filter(x=>x.from!==id&&x.to!==id);DB.users.forEach(x=>{if(x.base===id)x.base=''});audit('Base deleted',b.name);toast('Deleted '+b.name)}}
+  else if(k==='route'){const i=DB.routes.findIndex(x=>x.id===id);if(i<0)return;const x=DB.routes[i];DB.routes.splice(i,1);audit('Route rate deleted',B(x.from).name+' → '+B(x.to).name+(x.vendor?' · '+V(x.vendor).name:' · any vendor')+' · RM '+x.price);toast('Route rate deleted')}
+  save();renderMain()}
+function submitVendor(e){e.preventDefault();const g=id=>$(id).value.trim();const er=$('#fv-err');const name=g('#fv-name'),contact=g('#fv-contact');const cov=[...document.querySelectorAll('[data-cov]')].filter(c=>c.checked).map(c=>c.dataset.cov);
+  if(!name||!contact){er.textContent='Enter the company and contact person.';return}if(!cov.length){er.textContent='Pick at least one coverage region.';return}
+  const v={id:uid('V'),name,regNo:g('#fv-reg'),contact,phone:g('#fv-phone'),email:g('#fv-email'),coverage:cov,base:+g('#fv-base')||0,perKm:+g('#fv-km')||0,toll:+g('#fv-toll')||0,air:+g('#fv-air')||0,active:true};
+  DB.vendors.push(v);let note='';if($('#fv-admin').checked){let un=uname(contact);if(DB.users.some(x=>x.username===un))un+=DB.users.length;DB.users.push({id:uid('U'),username:un,name:contact,role:'vendor',vendor:v.id,pw:'welcome123',email:v.email,phone:v.phone,active:true});note=' Vendor admin login: '+un}
+  audit('Vendor registered',name+(note?' with vendor admin login':''));save();S.form=null;toast('Registered '+name+'.'+note);renderMain()}
+function submitDriver(e){e.preventDefault();const g=id=>$(id).value.trim();const er=$('#fd-err');const name=g('#fd-name'),phone=g('#fd-phone'),plate=g('#fd-plate').toUpperCase();
+  if(!g('#fd-vendor')){er.textContent='Register an active vendor first, under the Vendors tab.';return}
+  if(!name||!phone||!plate){er.textContent='Enter name, mobile number and plate number.';return}
+  const un=(g('#fd-user')||uname(name)).toLowerCase();if(DB.users.some(x=>x.username===un)){er.textContent='Username '+un+' is taken. Enter a different one.';return}
+  const d={id:uid('D'),name,vendor:g('#fd-vendor'),phone,plate,vehicle:g('#fd-veh'),active:true};DB.drivers.push(d);
+  DB.users.push({id:uid('U'),username:un,name,role:'driver',driver:d.id,vendor:d.vendor,pw:'welcome123',email:'',phone,active:true});
+  audit('Driver registered',name+' · '+V(d.vendor).name+' · login '+un);save();S.form=null;toast('Registered '+name+'. Login: '+un);renderMain()}
+
+/* ================= files: export & download ================= */
+const LIB={xlsx:'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',jspdf:'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',at:'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js'};
+const loaded={};
+const HAS={xlsx:()=>window.XLSX,jspdf:()=>window.jspdf,at:()=>window.jspdf&&window.jspdf.jsPDF&&window.jspdf.jsPDF.API.autoTable};
+function loadLib(k){if(HAS[k]())return Promise.resolve();if(!loaded[k])loaded[k]=new Promise((res,rej)=>{const s=document.createElement('script');s.src=LIB[k];s.onload=res;s.onerror=()=>{loaded[k]=null;rej(new Error('Could not load the export library. Check the internet connection.'))};document.head.appendChild(s)});return loaded[k]}
+let dlCap;
+function getDl(){if(dlCap===undefined)dlCap=(window.claude&&typeof window.claude.use==='function')?Promise.resolve(window.claude.use('downloads')).catch(()=>null):Promise.resolve(null);return dlCap}
+function blobToB64(b){return new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(String(fr.result).split(',')[1]);fr.readAsDataURL(b)})}
+async function saveFile(name,blob){
+  if(window.HWOTGAndroid&&window.HWOTGAndroid.saveFile){const b=await blobToB64(blob);window.HWOTGAndroid.saveFile(name,b,blob.type||'application/octet-stream');return}
+  const dl=await getDl();
+  if(dl){try{await dl.save({filename:name,data:blob});toast('Saved '+name)}catch(e){toast(e&&e.code==='declined'?'Download cancelled':'Could not save '+name+(e&&e.message?': '+e.message:''))}return}
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500);toast('Downloading '+name)}
+const stamp8=()=>{const d=new Date();return d.getFullYear()+p2(d.getMonth()+1)+p2(d.getDate())};
+async function exportData(key,fmt){const d=key==='report'?reportData():reportData(key);const base='HWOTG_'+d.t.replace(/[^A-Za-z0-9]+/g,'_')+'_'+stamp8();
+  if(!d.rows.length){toast('Nothing to export for this selection.');return}
+  try{
+    if(fmt==='csv'){const txt='﻿'+[d.h].concat(d.rows).map(r=>r.map(c=>'"'+String(c==null?'':c).replace(/"/g,'""')+'"').join(',')).join('\r\n');await saveFile(base+'.csv',new Blob([txt],{type:'text/csv'}))}
+    else if(fmt==='xlsx'){toast('Preparing Excel file…');await loadLib('xlsx');const X=window.XLSX;const ws=X.utils.aoa_to_sheet([d.h].concat(d.rows));ws['!cols']=d.h.map((h,i)=>({wch:Math.min(40,Math.max(h.length,...d.rows.slice(0,200).map(r=>String(r[i]==null?'':r[i]).length))+2)}));const wb=X.utils.book_new();X.utils.book_append_sheet(wb,ws,d.t.slice(0,31));
+      const info=X.utils.aoa_to_sheet([['Report',d.t],['Period',PLBL[S.period]],['Generated',iso(Date.now())],['Generated by',me().name+' ('+ROLE[me().role]+')'],['Rows',d.rows.length]]);X.utils.book_append_sheet(wb,info,'About');
+      const out=X.write(wb,{bookType:'xlsx',type:'array'});await saveFile(base+'.xlsx',new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}))}
+    else{toast('Preparing PDF…');await loadLib('jspdf');await loadLib('at');const doc=new window.jspdf.jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
+      doc.setFontSize(14);doc.text('HWOTG Delivery Tracking · '+d.t,40,40);doc.setFontSize(9);doc.setTextColor(90);doc.text(PLBL[S.period]+' · generated '+iso(Date.now())+' by '+me().name+' · '+d.rows.length+' rows',40,56);
+      doc.autoTable({head:[d.h],body:d.rows.map(r=>r.map(c=>c==null?'':String(c))),startY:68,styles:{fontSize:d.h.length>10?6.5:8,cellPadding:3},headStyles:{fillColor:[19,37,59]},margin:{left:40,right:40},didDrawPage:()=>{doc.setFontSize(8);doc.setTextColor(120);doc.text('Page '+doc.internal.getNumberOfPages(),doc.internal.pageSize.getWidth()-80,doc.internal.pageSize.getHeight()-20)}});
+      await saveFile(base+'.pdf',doc.output('blob'))}
+    audit('Report exported',d.t+' ('+fmt.toUpperCase()+', '+d.rows.length+' rows)');save();
+  }catch(e){toast(e.message||'Export failed')}}
+function toJpg(src){return new Promise(res=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=im.naturalWidth||480;c.height=im.naturalHeight||200;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);res({d:c.toDataURL('image/jpeg',.85),w:c.width,h:c.height})};im.onerror=()=>res(null);im.src=src})}
+function dataUrlBlob(d){const p=d.split(','),bin=atob(p[1]),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type:(p[0].match(/:(.*?);/)||[])[1]||'image/jpeg'})}
+async function dlPhoto(kind){const r=DB.reqs.find(x=>x.id===S.sel);const p=r.proof[kind==='col'?'collection':'delivery'];const im=await toJpg(p.photo||sample('Photo · '+r.no,kind));if(!im)return;saveFile((kind==='col'?'COL-':'POD-')+r.no+'.jpg',dataUrlBlob(im.d))}
+async function proofPdf(){const r=DB.reqs.find(x=>x.id===S.sel);try{toast('Preparing PDF…');await loadLib('jspdf');const doc=new window.jspdf.jsPDF({unit:'pt',format:'a4'});const s=ST(r.st);let y=48;
+  doc.setFontSize(15);doc.text('Proof of collection and delivery',40,y);y+=18;doc.setFontSize(10);doc.setTextColor(80);doc.text(r.no+' · '+FROM(r).name+' to '+TO(r).name+' · '+r.item+' x '+r.qty,40,y);y+=24;doc.setTextColor(20);
+  for(const [k,t] of [['collection','Collection'],['delivery','Delivery']]){const p=r.proof[k];if(!p)continue;doc.setFontSize(12);doc.text(t+' proof',40,y);y+=16;doc.setFontSize(9.5);
+    const lines=['Timestamp: '+iso(p.ts),'Driver: '+p.driver,'GPS: '+p.gps.lat+', '+p.gps.lng].concat(k==='delivery'?['Recipient: '+p.recipient]:[]);lines.forEach(l=>{doc.text(l,40,y);y+=13});
+    const im=await toJpg(p.photo||sample('Photo · '+r.no,k==='collection'?'col':'del'));if(im){const w=260,h=w*im.h/im.w;doc.addImage(im.d,'JPEG',40,y,w,h);if(k==='delivery'){const sg=await toJpg(p.sig||sigSample());if(sg){doc.text('Signature',320,y+10);doc.addImage(sg.d,'JPEG',320,y+16,180,180*sg.h/sg.w)}}y+=h+24}}
+  doc.setFontSize(8);doc.setTextColor(120);doc.text('Generated '+iso(Date.now())+' by '+me().name,40,800);await saveFile('Proof_'+r.no+'.pdf',doc.output('blob'))}catch(e){toast(e.message||'Could not create PDF')}}
+
+/* ================= GPS ================= */
+function captureGps(kind){const r=DB.reqs.find(x=>x.id===S.sel),tg=kind==='wh'?FROM(r):TO(r),o=$('#gps-o');if(o)o.textContent='Getting location…';
+  const sim=why=>{S.tmp.gps=jit(tg,.0016);S.tmp.gpsSim=true;if(o)o.textContent=S.tmp.gps.lat+', '+S.tmp.gps.lng+' · '+Math.round(hav(S.tmp.gps,tg)*1000)+' m from '+(kind==='wh'?'collection point':'destination')+' (simulated: '+why+')'};
+  if(!navigator.geolocation)return sim('no GPS on this device');
+  let done=false;const to=setTimeout(()=>{if(!done){done=true;sim('location timed out')}},9000);
+  try{navigator.geolocation.getCurrentPosition(p=>{if(done)return;done=true;clearTimeout(to);S.tmp.gps={lat:+p.coords.latitude.toFixed(5),lng:+p.coords.longitude.toFixed(5)};S.tmp.gpsSim=false;const dm=Math.round(hav(S.tmp.gps,tg)*1000);if(o)o.textContent=S.tmp.gps.lat+', '+S.tmp.gps.lng+' · ±'+Math.round(p.coords.accuracy)+' m · '+(dm>300?dm+' m from '+(kind==='wh'?'collection point':'destination')+', will be flagged':'on site')},()=>{if(done)return;done=true;clearTimeout(to);sim('location not available here')},{enableHighAccuracy:true,timeout:8000,maximumAge:0})}catch(e){done=true;clearTimeout(to);sim('location blocked')}}
+
+/* ================= events ================= */
+document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');
+  if(!t){if(S.pop&&!e.target.closest('#pop')){S.pop='';renderPop()}return}
+  const a=t.dataset.act;
+  if(a!=='bell'&&a!=='acct'&&S.pop&&!t.closest('#pop')){S.pop='';renderPop()}
+  if(a==='nav'){S.view=t.dataset.v;S.lim=25;S.form=null;if(t.dataset.k)S.adm=t.dataset.k;setNav(false);renderNav();renderMain();window.scrollTo(0,0)}
+  else if(a==='open'){if(t.classList.contains('alert'))t.remove();if(t.dataset.n){const n=DB.notifs.find(x=>x.id===t.dataset.n);if(n){n.read=true;save()}S.pop='';renderPop();renderBadge()}openDrawer(+t.dataset.id)}
+  else if(a==='close')closeDrawer();
+  else if(a==='menu')setNav(!S.nav);
+  else if(a==='sbox'){const b=$('#sbox');b.classList.toggle('open');if(b.classList.contains('open'))$('#q').focus()}
+  else if(a==='bell'||a==='acct'){S.pop=S.pop===a?'':a;renderPop();e.stopPropagation()}
+  else if(a==='readall'){notifFor().forEach(n=>n.read=true);save();renderPop();renderBadge()}
+  else if(a==='logout'){syncQ.then(()=>api('/api/logout',{})).catch(()=>{}).finally(signedOut)}
+  else if(a==='pwform'){S.pwForm=!S.pwForm;renderPop()}
+  else if(a==='pwsave')changePw();
+  else if(a==='resetPw'){if(!t.dataset.sure){t.dataset.sure='1';t.textContent='Confirm reset';t.classList.add('dng');return}const x=DB.users.find(y=>y.id===t.dataset.k);if(x){x.pw='welcome123';audit('Password reset',x.name);save();toast('Password for '+x.name+' reset to welcome123. They are signed out everywhere.');renderMain()}}
+  else if(a==='more'){S.lim+=25;renderMain()}
+  else if(a==='costmore'){S.costLim+=20;renderMain()}
+  else if(a==='clr'){resetF();S.q='';$('#q').value='';renderMain()}
+  else if(a==='period'){S.period=t.dataset.k;renderMain()}
+  else if(a==='mapm'){S.mapM=t.dataset.k;renderMain()}
+  else if(a==='mapsel'){S.mapSel=t.dataset.k||null;renderMain()}
+  else if(a==='stateReq'){resetF();S.f.state=t.dataset.k;S.view='requests';renderNav();renderMain();window.scrollTo(0,0)}
+  else if(a==='rep'){S.rep=t.dataset.k;renderMain()}
+  else if(a==='adm'){S.adm=t.dataset.k;S.form=null;renderMain()}
+  else if(a==='form'){S.form=t.dataset.k||null;renderMain()}
+  else if(a==='toggleUser'){const x=DB.users.find(y=>y.id===t.dataset.k);x.active=!x.active;audit(x.active?'User activated':'User deactivated',x.name);save();renderMain()}
+  else if(a==='toggleVendor'){const v=DB.vendors.find(y=>y.id===t.dataset.k);v.active=!v.active;audit(v.active?'Vendor activated':'Vendor deactivated',v.name);save();renderMain()}
+  else if(a==='do')doAction(t.dataset.d);
+  else if(a==='bk-save'&&LOCAL){syncQ.then(()=>LOCAL.exportAll()).then(d=>saveFile('HWOTG_backup_'+stamp8()+'.json',new Blob([JSON.stringify(d)],{type:'application/json'}))).catch(e=>toast(e.message||'Backup failed'))}
+  else if(a==='bk-wipe'&&LOCAL){if(!t.dataset.sure){t.dataset.sure='1';t.textContent='Select again to delete everything';return}syncQ.then(()=>LOCAL.wipe()).then(()=>{signedOut();toast('All data deleted. Sign in with msyafirol / admin123.')})}
+  else if(a==='undo'||a==='delreq'||a==='adm-fix'){if((a!=='adm-fix')&&!t.dataset.sure){t.dataset.sure='1';t.textContent=a==='undo'?'Select again to undo':'Select again to delete';return}adminDo(a==='adm-fix'?t.dataset.k:a)}
+  else if(a==='jt'){S.jt=t.dataset.k;S.jlim=10;renderMain()}
+  else if(a==='jmore'){S.jlim+=10;renderMain()}
+  else if(a==='alertx'){const el=t.closest('.alert');if(el)el.remove()}
+  else if(a==='sound'){setSound(!sndOn());renderPop()}
+  else if(a==='desk'){if(window.Notification)Notification.requestPermission().then(()=>renderPop())}
+  else if(a==='scan'){const r=DB.reqs.find(x=>x.id===S.sel);$('#a-scan').value=r.no;toast('Label scanned (simulated in this preview)')}
+  else if(a==='gps')captureGps(t.dataset.t);
+  else if(a==='sigclr'){const c=$('#sig');c.getContext('2d').clearRect(0,0,c.width,c.height);S.tmp.sig=false}
+  else if(a==='exp')exportData(t.dataset.k,t.dataset.fmt);
+  else if(a==='dlphoto')dlPhoto(t.dataset.k);
+  else if(a==='proofpdf')proofPdf();
+  else if(a==='del'){if(!t.dataset.sure){t.dataset.sure='1';t.textContent='Confirm delete';t.classList.add('dng');return}delRecord(t.dataset.k,t.dataset.id)}
+  else if(a==='restoreBase'){const b=DB.bases.find(x=>x.id===t.dataset.id);if(b){b.active=true;audit('Base restored',b.name);save();renderMain()}}
+  else if(a==='attdl')attDownload(t.dataset.id);
+  else if(a==='attdel'){if(!t.dataset.sure){t.dataset.sure='1';t.textContent='Confirm';t.classList.add('dng');return}attDelete(t.dataset.id)}
+  else if(a==='nrfdel'){S.nr.files[t.dataset.k].splice(+t.dataset.i,1);nrFiles()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(S.sel)closeDrawer();else if(S.pop){S.pop='';renderPop()}else if(S.nav)setNav(false)}
+  const t=e.target;if((e.key==='Enter'||e.key===' ')&&t&&t.classList&&t.classList.contains('bub')){e.preventDefault();t.dispatchEvent(new MouseEvent('click',{bubbles:true}))}});
+document.addEventListener('change',e=>{const t=e.target;
+  if(t.dataset.restore!==undefined&&t.files&&t.files[0]&&LOCAL){const f=t.files[0];t.value='';f.text().then(x=>LOCAL.importAll(JSON.parse(x))).then(()=>{signedOut();toast('Backup restored. Sign in again.')},e=>toast(e instanceof SyntaxError?'This file is not an HWOTG backup.':e.message));return}
+  if(t.dataset.att&&t.files&&t.files.length){addAttachments(t.dataset.att,t.files);t.value='';return}
+  if(t.dataset.nrf&&t.files&&t.files.length){nrAddFiles(t.dataset.nrf,t.files);return}
+  if(t.dataset.nr!==undefined){nrSync(t.dataset.nr);return}
+  if(t.dataset.fr!==undefined){frHint();return}
+  if(t.dataset.f!==undefined&&t.closest('.flt')){S.f[t.dataset.f]=t.value;S.lim=25;renderMain()}
+  else if(t.dataset.vsel!==undefined){S.vsel=t.value;renderMain()}
+  else if(t.dataset.sla){const v=parseFloat(t.value);if(v>0){if(t.dataset.z)DB.sla[t.dataset.sla][t.dataset.z]=v;else DB.sla[t.dataset.sla]=v;audit('SLA target changed',t.dataset.sla+(t.dataset.z?' zone '+t.dataset.z:'')+' = '+v+' h');save();renderMain()}}
+  else if(t.dataset.rate){const v=parseFloat(t.value);if(v>=0){const vv=V(t.dataset.rate);vv[t.dataset.k]=v;audit('Rate card changed',vv.name+' '+t.dataset.k+' = RM '+v);save();toast('Rate updated');renderMain()}}
+  else if(t.dataset.sur){const v=parseFloat(t.value);if(v>=0){DB.rates.sur[t.dataset.sur]=v/100;audit('Surcharge changed',t.dataset.sur+' = '+v+'%');save();toast('Surcharge updated')}}
+  else if(t.dataset.ch){DB.ch[t.dataset.ch]=t.checked;audit('Notification channel '+(t.checked?'enabled':'disabled'),t.dataset.ch);save();toast('Notification channels updated')}
+  else if(t.dataset.up&&t.files&&t.files[0]){const k=t.dataset.up;if(k==='ack'){S.tmp.ack=t.files[0].name;toast('Attached '+t.files[0].name)}else readImg(t.files[0],u=>{if(!u){toast('That file is not an image.');return}S.tmp[k]=u;const p=$('#prev');if(p)p.innerHTML='<img src="'+u+'" alt="Photo preview" style="max-height:150px;border-radius:6px;max-width:100%">'})}});
+document.addEventListener('input',e=>{if(e.target.id==='fb-addr'){const a=$('#fb-gm');if(a)a.href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(e.target.value)}});
+// Android back button (used by the APK wrapper): returns true when the app handled it
+window.hwotgBack=function(){if(S.sel){closeDrawer();return true}if(S.pop){S.pop='';renderPop();return true}if(S.nav){setNav(false);return true}if(me()&&S.view!==home()){S.view=home();renderNav();renderMain();return true}return false};
+
+/* ================= boot ================= */
+resetF();
+loadData().then(()=>{if(!me())return signedOut();S.view=home();shell();full();checkAlerts()},()=>{if(!S.uid)renderLogin()});
+getDl();
+})();
+</script>
+
+</body></html>
