@@ -128,6 +128,8 @@ nav.side{background:var(--panel);border-right:1px solid var(--line);padding:12px
 .grp:first-child{padding-top:4px}
 .nv{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;border:0;background:none;color:var(--ink);cursor:pointer;text-align:left;width:100%}
 .nv:hover{background:var(--hover)}
+a.nv,a.btn,.tabs a{text-decoration:none}
+a.rq{color:inherit;text-decoration:none}a.rq:hover{color:var(--accent);text-decoration:underline}
 .nv[aria-current="page"]{background:var(--accent-soft);color:var(--accent);font-weight:600;box-shadow:inset 3px 0 0 var(--accent)}
 .nv svg{flex:none}
 .nv .cnt{margin-left:auto;font-size:11px;background:var(--hover);color:var(--muted);border-radius:9px;padding:0 7px;font-variant-numeric:tabular-nums}
@@ -226,8 +228,8 @@ textarea{width:100%;min-height:64px;resize:vertical}
 .stack{display:flex;height:14px;border-radius:4px;overflow:hidden;background:var(--hover)}
 .stack i{display:block;height:100%}
 .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:16px;overflow-x:auto}
-.tabs button{border:0;background:none;padding:9px 14px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;color:var(--muted);font-weight:500}
-.tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+.tabs button,.tabs a{border:0;background:none;padding:9px 14px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;color:var(--muted);font-weight:500}
+.tabs button[aria-selected="true"],.tabs a[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
 .exp{display:inline-flex;gap:6px;flex-wrap:wrap}
 fieldset{border:1px solid var(--line);border-radius:6px;padding:10px 12px;margin:0;min-width:0}
 
@@ -1507,10 +1509,26 @@ function NAV(){const u=me();if(!u)return[];
 const home=()=>NAV()[1][0];
 const allowed=v=>NAV().some(n=>n[0]===v);
 function renderNav(){const u=me();const cnt={requests:scope().filter(isOpen).length};
-  $('#side').innerHTML=NAV().map(n=>n.length===1?'<div class="grp">'+n[0]+'</div>':'<button class="nv" data-act="nav" data-v="'+n[0]+'"'+(S.view===n[0]?' aria-current="page"':'')+'>'+ico(n[2])+'<span>'+n[1]+'</span>'+(cnt[n[0]]?'<span class="cnt">'+cnt[n[0]]+'</span>':'')+'</button>').join('')+'<div class="side-foot">Signed in as '+esc(u.name)+'<br>'+ROLE[u.role]+' · '+esc(scopeLbl(u))+'</div>'}
+  $('#side').innerHTML=NAV().map(n=>n.length===1?'<div class="grp">'+n[0]+'</div>':'<button class="nv" data-act="nav" data-v="'+n[0]+'"'+(S.view===n[0]?' aria-current="page"':'')+'>'+ico(n[2])+'<span>'+n[1]+'</span>'+(cnt[n[0]]?'<span class="cnt">'+cnt[n[0]]+'</span>':'')+'</button>').join('')+'<div class="side-foot">Signed in as '+esc(u.name)+'<br>'+ROLE[u.role]+' · '+esc(scopeLbl(u))+'</div>';linkify($('#side'))}
+/* ================= addresses: every page and request has a link, so it can open in its own tab ================= */
+// #/<view>[/<tab>][/r/<request id>], e.g. #/admin/users, #/reports/cost, #/requests/r/1001
+function routeOf(){let h='#/'+S.view;if(S.view==='admin')h+='/'+S.adm;if(S.view==='reports')h+='/'+S.rep;if(S.sel)h+='/r/'+S.sel;return h}
+function syncHash(push){if(!me())return;const h=routeOf();if(location.hash===h)return;try{history[push?'pushState':'replaceState'](null,'',h)}catch(e){location.hash=h}}
+function applyRoute(){const p=decodeURIComponent(location.hash.replace(/^#\/?/,'')).split('/').filter(Boolean);let i=1,sub='';if(p[1]&&p[1]!=='r'){sub=p[1];i=2}
+  S.view=p[0]&&allowed(p[0])?p[0]:home();if(S.view==='admin'&&ADM[sub])S.adm=sub;if(S.view==='reports'&&REPS[sub])S.rep=sub;S.form=null;S.lim=25;
+  return p[i]==='r'?(+p[i+1]||null):null}
+function hrefFor(el){const a=el.dataset.act,v=el.dataset.v;
+  if(a==='nav')return'#/'+v+(v==='admin'&&el.dataset.k?'/'+el.dataset.k:'');if(a==='adm')return'#/admin/'+el.dataset.k;if(a==='rep')return'#/reports/'+el.dataset.k;
+  return'#/'+S.view+(S.view==='admin'?'/'+S.adm:S.view==='reports'?'/'+S.rep:'')+'/r/'+el.dataset.id}
+// Turn page buttons into real links, and request numbers in rows into links, without changing how a plain click behaves.
+function linkify(root){if(!root)return;
+  root.querySelectorAll('button[data-act=nav],button[data-act=adm],button[data-act=rep],button[data-act=open]:not([data-n])').forEach(b=>{const a=document.createElement('a');[...b.attributes].forEach(x=>{if(x.name!=='type')a.setAttribute(x.name,x.value)});a.innerHTML=b.innerHTML;a.href=hrefFor(b);b.replaceWith(a)});
+  root.querySelectorAll('tr[data-act=open]').forEach(tr=>{const m=tr.querySelector('.mono');if(m&&!m.querySelector('a'))m.innerHTML='<a class="rq" href="'+hrefFor(tr)+'" title="Open, or right-click to open in a new tab">'+esc(m.textContent)+'</a>'})}
+function goRoute(){if(!me())return;const sel=applyRoute();setNav(false);renderNav();renderMain();window.scrollTo(0,0);if(sel){if(sel!==S.sel)openDrawer(sel)}else if(S.sel)closeDrawer()}
+window.addEventListener('hashchange',goRoute);
 function renderMain(){if(!allowed(S.view))S.view=home();
   const map={overview:viewOverview,ops:viewOps,map:viewMap,cost:viewCost,vendor:viewVendor,requests:viewRequests,proofs:viewRequests,new:viewNew,sla:viewSLA,drivers:viewDrivers,reports:viewReports,audit:viewAudit,admin:viewAdmin,jobs:viewJobs,mine:viewMine};
-  $('#main').innerHTML=map[S.view]();
+  $('#main').innerHTML=map[S.view]();linkify($('#main'));syncHash(false);
   const nf=$('#nf');if(nf){nf.addEventListener('submit',submitNew);nrSync();nrFiles()}
   const fu=$('#fu');if(fu){fu.addEventListener('submit',submitUser);$('#fu-role').addEventListener('change',syncUserForm);$('#fu-vendor').addEventListener('change',syncUserForm);syncUserForm()}
   const fv=$('#fv');if(fv)fv.addEventListener('submit',submitVendor);
@@ -1535,7 +1553,7 @@ function renderLogin(){closeDrawer();
   $('#app').innerHTML='<div class="login"><section class="lg-brand"><div><div class="brand"><span class="logo">'+ico('box',17)+'</span><span>HWOTG Delivery Tracking<small>Hardware Support · Spare parts</small></span></div><h1>Every spare part, from warehouse to store, on one record.</h1><p>Requests, vendor assignment, proof of collection and delivery, SLA and cost across 16 states. Shared by HWS, vendors, drivers and regional stores.</p></div><div class="lg-flow"><div><b>Request</b>Store raises it</div><div><b>Assign</b>HWS and vendor</div><div><b>Deliver</b>Driver with proof</div><div><b>Accept</b>Store signs off</div></div></section><section class="lg-form"><form class="lg-card" id="lf"><h2>Sign in</h2><label>Username<input id="lu" autocomplete="username" required></label><label>Password<input id="lp" type="password" autocomplete="current-password" required></label><button class="btn pri" type="submit" style="justify-content:center;height:40px">Sign in</button><div class="err" id="le" role="alert"></div><p class="hint" style="margin:0">Accounts are created by the Administrator. Forgot your password? Ask the Administrator to reset it.</p>'+(LOCAL?'<p class="hint" style="margin:0">Offline edition. Everything is saved in this browser on this device. A new install starts with msyafirol / admin123.</p>':'')+'</form></section></div>';
   $('#lf').addEventListener('submit',async e=>{e.preventDefault();const un=$('#lu').value.trim().toLowerCase(),pw=$('#lp').value,bt=$('#lf button[type=submit]');bt.disabled=true;$('#le').textContent='';
     try{await api('/api/login',{username:un,password:pw});await loadData()}catch(x){$('#le').textContent=x.message;bt.disabled=false;return}
-    S.view=home();S.q='';resetF();shell();full();checkAlerts();window.scrollTo(0,0)})}
+    S.q='';resetF();const sel=applyRoute();shell();full();checkAlerts();window.scrollTo(0,0);if(sel)openDrawer(sel)})}
 const resetF=()=>{S.f={status:'',state:'',region:'',sla:'',driver:'',vendor:'',from:'',to:''};S.lim=25;S.costLim=20;S.form=null;S.mapSel=null;S.nr={}};
 
 /* ================= drawer ================= */
@@ -1580,8 +1598,8 @@ function renderDrawer(){const r=DB.reqs.find(x=>x.id===S.sel),L=$('#layer');if(!
    +panel('Proof of collection and delivery',r.verified?'Verified by HWS':'','<div style="display:grid;gap:10px">'+proofBox('Collection proof',r.proof.collection,'col',r)+proofBox('Delivery proof',r.proof.delivery,'del',r)+((r.proof.collection||r.proof.delivery)?'<button class="btn" data-act="proofpdf" style="width:max-content">'+ico('dl',15)+'Download proof (PDF)</button>':'')+'</div>')
    +panel('Activity','','<ul class="tl">'+hist(r).reverse().slice(0,14).map(e=>'<li class="d"><i></i><div><div class="n">'+esc(e.action)+'</div><div class="m">'+iso(e.ts)+' · '+esc(e.user)+(e.remarks?' · '+esc(e.remarks):'')+'</div></div></li>').join('')+'</ul>')+'</div></aside>';
   initSig()}
-function openDrawer(id){const r=DB.reqs.find(x=>x.id===id);if(!r||!scope().includes(r)){toast('This request is outside your access.');return}S.sel=id;S.tmp={};renderDrawer();const d=$('.dr');if(d)d.scrollTop=0}
-function closeDrawer(){S.sel=null;S.tmp={};const l=$('#layer');if(l)l.innerHTML=''}
+function openDrawer(id){const r=DB.reqs.find(x=>x.id===id);if(!r||!scope().includes(r)){toast('This request is outside your access.');return}S.sel=id;S.tmp={};renderDrawer();syncHash(false);const d=$('.dr');if(d)d.scrollTop=0}
+function closeDrawer(){const was=S.sel;S.sel=null;S.tmp={};const l=$('#layer');if(l)l.innerHTML='';if(was)syncHash(false)}
 
 /* ---------- signature & photo ---------- */
 function initSig(){const c=$('#sig');if(!c)return;const ratio=window.devicePixelRatio||1,b=c.getBoundingClientRect();c.width=Math.max(1,b.width*ratio);c.height=Math.max(1,b.height*ratio);const x=c.getContext('2d');x.scale(ratio,ratio);x.lineWidth=2.2;x.lineCap='round';x.strokeStyle='#14213a';let dn=false;
@@ -1725,11 +1743,12 @@ function captureGps(kind){const r=DB.reqs.find(x=>x.id===S.sel),tg=kind==='wh'?F
   try{navigator.geolocation.getCurrentPosition(p=>{if(done)return;done=true;clearTimeout(to);S.tmp.gps={lat:+p.coords.latitude.toFixed(5),lng:+p.coords.longitude.toFixed(5)};S.tmp.gpsSim=false;const dm=Math.round(hav(S.tmp.gps,tg)*1000);if(o)o.textContent=S.tmp.gps.lat+', '+S.tmp.gps.lng+' · ±'+Math.round(p.coords.accuracy)+' m · '+(dm>300?dm+' m from '+(kind==='wh'?'collection point':'destination')+', will be flagged':'on site')},()=>{if(done)return;done=true;clearTimeout(to);sim('location not available here')},{enableHighAccuracy:true,timeout:8000,maximumAge:0})}catch(e){done=true;clearTimeout(to);sim('location blocked')}}
 
 /* ================= events ================= */
-document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');
+document.addEventListener('click',e=>{const ln=e.target.closest('a[href^="#/"]');if(ln){if(e.ctrlKey||e.metaKey||e.shiftKey||e.altKey||e.button)return;e.preventDefault()}
+  const t=e.target.closest('[data-act]');
   if(!t){if(S.pop&&!e.target.closest('#pop')){S.pop='';renderPop()}return}
   const a=t.dataset.act;
   if(a!=='bell'&&a!=='acct'&&S.pop&&!t.closest('#pop')){S.pop='';renderPop()}
-  if(a==='nav'){S.view=t.dataset.v;S.lim=25;S.form=null;if(t.dataset.k)S.adm=t.dataset.k;setNav(false);renderNav();renderMain();window.scrollTo(0,0)}
+  if(a==='nav'){S.view=t.dataset.v;S.lim=25;S.form=null;if(t.dataset.k)S.adm=t.dataset.k;if(S.sel)closeDrawer();syncHash(true);setNav(false);renderNav();renderMain();window.scrollTo(0,0)}
   else if(a==='open'){if(t.classList.contains('alert'))t.remove();if(t.dataset.n){const n=DB.notifs.find(x=>x.id===t.dataset.n);if(n){n.read=true;save()}S.pop='';renderPop();renderBadge()}openDrawer(+t.dataset.id)}
   else if(a==='close')closeDrawer();
   else if(a==='menu')setNav(!S.nav);
@@ -1747,8 +1766,8 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');
   else if(a==='mapm'){S.mapM=t.dataset.k;renderMain()}
   else if(a==='mapsel'){S.mapSel=t.dataset.k||null;renderMain()}
   else if(a==='stateReq'){resetF();S.f.state=t.dataset.k;S.view='requests';renderNav();renderMain();window.scrollTo(0,0)}
-  else if(a==='rep'){S.rep=t.dataset.k;renderMain()}
-  else if(a==='adm'){S.adm=t.dataset.k;S.form=null;renderMain()}
+  else if(a==='rep'){S.rep=t.dataset.k;syncHash(true);renderMain()}
+  else if(a==='adm'){S.adm=t.dataset.k;S.form=null;syncHash(true);renderMain()}
   else if(a==='form'){S.form=t.dataset.k||null;renderMain()}
   else if(a==='toggleUser'){const x=DB.users.find(y=>y.id===t.dataset.k);x.active=!x.active;audit(x.active?'User activated':'User deactivated',x.name);save();renderMain()}
   else if(a==='toggleVendor'){const v=DB.vendors.find(y=>y.id===t.dataset.k);v.active=!v.active;audit(v.active?'Vendor activated':'Vendor deactivated',v.name);save();renderMain()}
@@ -1793,7 +1812,7 @@ window.hwotgBack=function(){if(S.sel){closeDrawer();return true}if(S.pop){S.pop=
 
 /* ================= boot ================= */
 resetF();
-loadData().then(()=>{if(!me())return signedOut();S.view=home();shell();full();checkAlerts()},()=>{if(!S.uid)renderLogin()});
+loadData().then(()=>{if(!me())return signedOut();const sel=applyRoute();shell();full();checkAlerts();if(sel)openDrawer(sel)},()=>{if(!S.uid)renderLogin()});
 getDl();
 })();
 </script>
