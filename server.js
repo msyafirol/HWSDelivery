@@ -2,6 +2,8 @@
 // HWOTG Delivery Tracking server: serves the web app, signs users in and keeps one shared database.
 // No third-party packages: Node 22+ http, crypto and the built-in node:sqlite module.
 const http = require('node:http');
+const net = require('node:net');
+const tls = require('node:tls');
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
@@ -138,7 +140,7 @@ function stashReq(r) {
 /* ---------- sync: the page sends the records it changed ---------- */
 class Denied extends Error { }
 function applySync(u, body) {
-  const ups = body.upserts || {}, dels = body.deletes || {};
+  const ups = body.upserts || {}, dels = body.deletes || {}, fresh = [];
   tx(() => {
     for (const c of Object.keys(ups)) {
       if (!COLLS.includes(c) || !Array.isArray(ups[c])) continue;
@@ -151,7 +153,7 @@ function applySync(u, body) {
           }
           if (!old && (typeof x.id !== 'number' || x.id > getMeta('seq', 1000))) throw new Denied('Request number was not issued by the server.');
           stashReq(x); putRec(c, x)
-        } else if (c === 'notifs') { putRec(c, x) }
+        } else if (c === 'notifs') { if (!old) fresh.push(x); putRec(c, x) }
         else if (c === 'audit') { if (!old) putRec(c, Object.assign(x, { user: u.name, role: x.role })) }
         else if (c === 'users') {
           const onlyActive = old && Object.keys(Object.assign({}, old, x)).every(k => k === 'active' || k === 'pw' || JSON.stringify(old[k]) === JSON.stringify(x[k]));
@@ -194,7 +196,111 @@ function applySync(u, body) {
       setMeta('settings', cur)
     }
     bump()
+  });
+  return fresh
+}
+
+/* ---------- email: SMTP (Gmail, Outlook, company mail) or the Resend API ---------- */
+const MAIL = {
+  from: process.env.MAIL_FROM || process.env.SMTP_USER || '',
+  host: process.env.SMTP_HOST || '', port: +process.env.SMTP_PORT || 587, user: process.env.SMTP_USER || '', pass: process.env.SMTP_PASS || '',
+  secure: process.env.SMTP_SECURE === '1' || +process.env.SMTP_PORT === 465,
+  resend: process.env.RESEND_API_KEY || '', appUrl: (process.env.APP_URL || '').replace(/\/+$/, '')
+};
+const mailMethod = () => MAIL.resend ? 'Resend API' : MAIL.host ? 'SMTP ' + MAIL.host + ':' + MAIL.port : '';
+const addrOf = s => { const m = String(s).match(/<([^>]+)>/); return (m ? m[1] : String(s)).trim() };
+const okEmail = s => /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(String(s || '').trim());
+function mimeMsg(to, subject, text) {
+  const enc = x => /[^\x20-\x7e]/.test(x) ? '=?UTF-8?B?' + Buffer.from(x).toString('base64') + '?=' : x;
+  const b = Buffer.from(text).toString('base64').replace(/.{76}/g, '$&\r\n');
+  return ['From: ' + MAIL.from, 'To: ' + to, 'Subject: ' + enc(subject), 'Date: ' + new Date().toUTCString(), 'Message-ID: <' + crypto.randomBytes(12).toString('hex') + '@hwotg>',
+    'MIME-Version: 1.0', 'Content-Type: text/plain; charset=utf-8', 'Content-Transfer-Encoding: base64', '', b].join('\r\n')
+}
+// A small SMTP client: implicit TLS on 465, STARTTLS when offered, AUTH PLAIN or LOGIN. Returns one result per message.
+function smtpSend(msgs) {
+  return new Promise((resolve, reject) => {
+    let sock, buf = '', lines = [], waiters = [], ready = [], finished = false;
+    const timer = setTimeout(() => fail(new Error('Mail server did not answer within 30 seconds')), 30000);
+    function fail(e) { if (finished) return; finished = true; clearTimeout(timer); try { sock && sock.destroy() } catch (x) { } reject(e) }
+    function onData(d) {
+      buf += d; let i;
+      while ((i = buf.indexOf('\n')) >= 0) {
+        const line = buf.slice(0, i).replace(/\r$/, ''); buf = buf.slice(i + 1); lines.push(line);
+        if (/^\d{3}( |$)/.test(line)) { const r = { code: +line.slice(0, 3), text: lines.join(' ') }; lines = []; const w = waiters.shift(); w ? w(r) : ready.push(r) }
+      }
+    }
+    const read = () => ready.length ? Promise.resolve(ready.shift()) : new Promise(r => waiters.push(r));
+    async function cmd(c, ok, label) { if (c != null) sock.write(c + '\r\n'); const r = await read(); if (!ok.includes(r.code)) throw new Error((label || String(c).split(' ')[0]) + ' refused: ' + r.text); return r }
+    function attach(s) { sock = s; s.setEncoding('utf8'); s.on('data', onData); s.on('error', fail); s.on('close', () => fail(new Error('Mail server closed the connection'))) }
+    async function run() {
+      await cmd(null, [220], 'Greeting');
+      let r = await cmd('EHLO hwotg.local', [250]);
+      if (!MAIL.secure && /STARTTLS/i.test(r.text)) {
+        await cmd('STARTTLS', [220]);
+        const raw = sock; raw.removeAllListeners('data'); raw.removeAllListeners('close'); raw.removeAllListeners('error');
+        await new Promise((ok, no) => { const t = tls.connect({ socket: raw, servername: MAIL.host }, ok); t.once('error', no); attach(t) });
+        r = await cmd('EHLO hwotg.local', [250]);
+      }
+      if (MAIL.user) {
+        if (/AUTH[^\r\n]*PLAIN/i.test(r.text)) await cmd('AUTH PLAIN ' + Buffer.from('\0' + MAIL.user + '\0' + MAIL.pass).toString('base64'), [235], 'Sign-in (check SMTP_USER and SMTP_PASS)');
+        else { await cmd('AUTH LOGIN', [334]); await cmd(Buffer.from(MAIL.user).toString('base64'), [334], 'Username'); await cmd(Buffer.from(MAIL.pass).toString('base64'), [235], 'Sign-in (check SMTP_USER and SMTP_PASS)') }
+      }
+      const out = [];
+      for (const m of msgs) {
+        try {
+          await cmd('MAIL FROM:<' + addrOf(MAIL.from) + '>', [250], 'Sender');
+          await cmd('RCPT TO:<' + m.to + '>', [250, 251], 'Recipient');
+          await cmd('DATA', [354]); sock.write(mimeMsg(m.to, m.subject, m.text) + '\r\n.\r\n'); await cmd(null, [250], 'Message');
+          out.push({ ok: true })
+        } catch (e) { out.push({ ok: false, error: e.message }); try { await cmd('RSET', [250]) } catch (x) { throw e } }
+      }
+      try { await cmd('QUIT', [221]) } catch (e) { }
+      finished = true; clearTimeout(timer); sock.destroy(); resolve(out)
+    }
+    const onConnect = () => run().catch(fail);
+    attach(MAIL.secure ? tls.connect({ host: MAIL.host, port: MAIL.port, servername: MAIL.host }, onConnect) : net.connect(MAIL.port, MAIL.host, onConnect))
   })
+}
+async function resendSend(msgs) {
+  const out = [];
+  for (const m of msgs) {
+    try {
+      const r = await fetch(process.env.RESEND_API_URL || 'https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + MAIL.resend, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: MAIL.from, to: [m.to], subject: m.subject, text: m.text }) });
+      out.push(r.ok ? { ok: true } : { ok: false, error: 'Resend ' + r.status + ': ' + (await r.text()).slice(0, 200) })
+    } catch (e) { out.push({ ok: false, error: e.message }) }
+  }
+  return out
+}
+function logMail(entries) { const l = getMeta('maillog', []); entries.forEach(e => l.unshift(e)); setMeta('maillog', l.slice(0, 60)) }
+async function deliver(msgs) {
+  if (!msgs.length) return [];
+  let res;
+  try { res = MAIL.resend ? await resendSend(msgs) : await smtpSend(msgs) } catch (e) { res = msgs.map(() => ({ ok: false, error: e.message })) }
+  logMail(msgs.map((m, i) => ({ ts: Date.now(), to: m.to, subject: m.subject, ok: res[i].ok, error: res[i].error || '' })));
+  return res
+}
+let mailQ = Promise.resolve(), lastOrigin = '';
+function recipients(n, r) {
+  return all('users').filter(u => u.active && okEmail(u.email) && u.id !== n.by && (
+    (LEAD.includes(u.role) && (n.to.includes('hws') || n.to.includes('lead'))) || (u.role === 'hws' && n.to.includes('hws')) ||
+    (u.role === 'user' && n.to.includes('user') && userSees(u, r)) || (u.role === 'vendor' && n.to.includes('vendor') && r.vendor === u.vendor) ||
+    (u.role === 'driver' && n.to.includes('driver') && r.driver === u.driver)))
+}
+// New notifications become emails to the people they are meant for, when the Email channel is on.
+function mailNotifs(list) {
+  const st = getMeta('settings', {});
+  if (!list.length || !(st.ch && st.ch.email) || !mailMethod() || !MAIL.from) return;
+  const base = MAIL.appUrl || lastOrigin, msgs = [];
+  list.forEach(n => {
+    const r = getRec('reqs', n.rid); if (!r) return;
+    const from = getRec('bases', r.from) || {}, to = getRec('bases', r.to) || {};
+    recipients(n, r).forEach(u => msgs.push({
+      to: u.email.trim(), subject: '[HWOTG] ' + n.title + ' · ' + r.no,
+      text: 'Hello ' + u.name + ',\n\n' + n.title + '\n\nRequest: ' + r.no + '\nRoute: ' + (from.name || r.from) + ' to ' + (to.name || r.to) + '\nItem: ' + r.item + ' x ' + r.qty + '\nPriority: ' + r.prio + (r.day ? '\nDay type: ' + r.day : '') +
+        (base ? '\n\nOpen the request: ' + base + '/#/requests/r/' + r.id : '') + '\n\nThis is an automatic message from HWOTG Delivery Tracking.'
+    }))
+  });
+  if (msgs.length) mailQ = mailQ.then(() => deliver(msgs)).catch(e => console.error('Mail', e))
 }
 
 /* ---------- http ---------- */
@@ -223,6 +329,7 @@ const audit = (u, action, remarks) => putRec('audit', { id: 'a' + crypto.randomB
 
 async function api(req, res, url) {
   const p = url.pathname, m = req.method;
+  if (req.headers.host) lastOrigin = (req.headers['x-forwarded-proto'] || 'http').split(',')[0] + '://' + req.headers.host;
   if (p === '/api/health') return send(res, 200, { ok: true });
   if (p === '/api/login' && m === 'POST') {
     const b = await body(req), un = String(b.username || '').trim().toLowerCase(), key = un + '|' + req.socket.remoteAddress;
@@ -245,7 +352,20 @@ async function api(req, res, url) {
     if (!can(u, 'create')) return send(res, 403, { error: 'Your role cannot create requests.' });
     const id = tx(() => { const n = getMeta('seq', 1000) + 1; setMeta('seq', n); return n }); return send(res, 200, { id })
   }
-  if (p === '/api/sync' && m === 'POST') { const b = await body(req); applySync(u, b); return send(res, 200, { ok: true, version: getMeta('version', 1) }) }
+  if (p === '/api/sync' && m === 'POST') { const b = await body(req); const fresh = applySync(u, b); mailNotifs(fresh); return send(res, 200, { ok: true, version: getMeta('version', 1) }) }
+  if (p === '/api/mail' && m === 'GET') {
+    if (!can(u, 'notif')) return send(res, 403, { error: 'Your role cannot manage notifications.' });
+    const us = all('users').filter(x => x.active);
+    return send(res, 200, { method: mailMethod(), from: MAIL.from, appUrl: MAIL.appUrl || lastOrigin, missing: us.filter(x => !okEmail(x.email)).map(x => x.name), log: getMeta('maillog', []).slice(0, 20) })
+  }
+  if (p === '/api/mail/test' && m === 'POST') {
+    if (!can(u, 'notif')) return send(res, 403, { error: 'Your role cannot manage notifications.' });
+    const b = await body(req), to = String(b.to || '').trim();
+    if (!okEmail(to)) return send(res, 400, { error: 'Enter a valid email address.' });
+    if (!mailMethod() || !MAIL.from) return send(res, 400, { error: 'Email is not set up on the server yet. Add the SMTP or Resend settings in your host\'s environment variables, then redeploy.' });
+    const r = await (mailQ = mailQ.then(() => deliver([{ to, subject: '[HWOTG] Test email', text: 'This is a test email from HWOTG Delivery Tracking, sent by ' + u.name + '.\n\nIf you can read this, email notifications are working.' }])))
+    return r[0].ok ? send(res, 200, { ok: true }) : send(res, 502, { error: r[0].error })
+  }
   if (p === '/api/password' && m === 'POST') {
     const b = await body(req), h = q.hash.get(String(u.id));
     if (!checkPw(b.current || '', h && h.hash)) return send(res, 400, { error: 'Current password is incorrect.' });
