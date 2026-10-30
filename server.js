@@ -296,7 +296,7 @@ function mailNotifs(list) {
     const from = getRec('bases', r.from) || {}, to = getRec('bases', r.to) || {};
     recipients(n, r).forEach(u => msgs.push({
       to: u.email.trim(), subject: '[HWOTG] ' + n.title + ' · ' + r.no,
-      text: 'Hello ' + u.name + ',\n\n' + n.title + '\n\nRequest: ' + r.no + '\nRoute: ' + (from.name || r.from) + ' to ' + (to.name || r.to) + '\nItem: ' + r.item + ' x ' + r.qty + '\nPriority: ' + r.prio + (r.day ? '\nDay type: ' + r.day : '') +
+      text: 'Hello ' + u.name + ',\n\n' + n.title + '\n\nRequest: ' + r.no + (r.ref ? '\nRequest No.: ' + r.ref : '') + '\nRoute: ' + (from.name || r.from) + ' to ' + (to.name || r.to) + '\nItem: ' + r.item + ' x ' + r.qty + '\nPriority: ' + r.prio + (r.day ? '\nDay type: ' + r.day : '') +
         (base ? '\n\nOpen the request: ' + base + '/#/requests/r/' + r.id : '') + '\n\nThis is an automatic message from HWOTG Delivery Tracking.'
     }))
   });
