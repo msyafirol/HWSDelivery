@@ -137,7 +137,7 @@
 
   /* ---------- scoping ---------- */
   const isHWS = u => HWS.includes(u.role), isLead = u => LEAD.includes(u.role);
-  const userSees = (u, r) => r.requestor === u.id || (!!u.base && r.to === u.base);
+  const userSees = (u, r) => r.requestor === u.id || (!!u.base && (r.to === u.base || r.to2 === u.base));
   function inScope(u, r) {
     if (!r) return false; if (isHWS(u)) return true;
     if (u.role === 'vendor') return !!u.vendor && r.vendor === u.vendor;
