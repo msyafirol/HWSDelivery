@@ -97,7 +97,7 @@ seed();
 
 /* ---------- scoping ---------- */
 const isHWS = u => HWS.includes(u.role), isLead = u => LEAD.includes(u.role);
-const userSees = (u, r) => r.requestor === u.id || (!!u.base && r.to === u.base);
+const userSees = (u, r) => r.requestor === u.id || (!!u.base && (r.to === u.base || r.to2 === u.base));
 function inScope(u, r) {
   if (!r) return false; if (isHWS(u)) return true;
   if (u.role === 'vendor') return !!u.vendor && r.vendor === u.vendor;
@@ -293,7 +293,7 @@ function mailNotifs(list) {
   const base = MAIL.appUrl || lastOrigin, msgs = [];
   list.forEach(n => {
     const r = getRec('reqs', n.rid); if (!r) return;
-    const from = getRec('bases', r.from) || {}, to = getRec('bases', r.to) || {};
+    const nm = id => (getRec('bases', id) || {}).name || id, from = { name: [r.from, r.from2].filter(Boolean).map(nm).join(' + ') }, to = { name: [r.to, r.to2].filter(Boolean).map(nm).join(' + ') };
     recipients(n, r).forEach(u => msgs.push({
       to: u.email.trim(), subject: '[HWOTG] ' + n.title + ' · ' + r.no,
       text: 'Hello ' + u.name + ',\n\n' + n.title + '\n\nRequest: ' + r.no + (r.ref ? '\nRequest No.: ' + r.ref : '') + '\nRoute: ' + (from.name || r.from) + ' to ' + (to.name || r.to) + '\nItem: ' + r.item + ' x ' + r.qty + '\nPriority: ' + r.prio + (r.day ? '\nDay type: ' + r.day : '') +
