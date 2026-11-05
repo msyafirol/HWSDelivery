@@ -21,7 +21,7 @@ const HWS = ['admin', 'manager', 'hws'], LEAD = ['admin', 'manager'];
 const ROLES = ['admin', 'manager', 'hws', 'vendor', 'driver', 'user'];
 const PERM_DEFAULTS = {
   dash: [1, 1, 1, 0, 0, 0], cost: [1, 1, 1, 0, 0, 0], vendorDash: [1, 1, 1, 1, 0, 0], sla: [1, 1, 1, 0, 0, 0], proofs: [1, 1, 1, 0, 0, 0], reports: [1, 1, 1, 0, 0, 0],
-  create: [1, 1, 1, 0, 0, 1], validate: [1, 1, 1, 0, 0, 0], assign: [0, 0, 0, 1, 0, 0], collect: [0, 0, 0, 0, 1, 0], accept: [0, 0, 0, 0, 0, 1], vconfirm: [0, 0, 0, 1, 0, 0],
+  create: [1, 1, 1, 0, 0, 1], validate: [1, 1, 1, 0, 0, 0], assign: [0, 0, 0, 1, 0, 0], collect: [0, 0, 0, 0, 1, 0], accept: [0, 0, 0, 0, 0, 1], acceptHws: [1, 0, 1, 0, 0, 0], vconfirm: [0, 0, 0, 1, 0, 0],
   close: [1, 1, 1, 0, 0, 0], verify: [1, 1, 1, 0, 0, 0], escalate: [1, 1, 0, 0, 0, 0],
   users: [1, 1, 1, 0, 0, 0], bases: [1, 1, 1, 0, 0, 0], vendors: [1, 1, 1, 0, 0, 0], rates: [1, 1, 0, 0, 0, 0], deactivate: [1, 1, 0, 0, 0, 0], delete: [1, 0, 0, 0, 0, 0],
   undo: [1, 0, 0, 0, 0, 0], notif: [1, 1, 1, 0, 0, 0], audit: [1, 1, 1, 0, 0, 0]
