@@ -5,7 +5,7 @@
   const COLLS = ['users', 'vendors', 'drivers', 'bases', 'routes', 'reqs', 'notifs', 'audit'];
   const HWS = ['admin', 'manager', 'hws'], LEAD = ['admin', 'manager'];
   // Role permissions the Administrator can tick or untick. Defaults: [admin, manager, hws, vendor, driver, user].
-  const ROLES = ['admin', 'manager', 'hws', 'vendor', 'driver', 'user'];
+  const ROLES = ['admin', 'manager', 'hws', 'vendor', 'driver', 'user', 'vendorco'];
   const PERM_DEFAULTS = {
     dash: [1, 1, 1, 0, 0, 0], cost: [1, 1, 1, 0, 0, 0], vendorDash: [1, 1, 1, 1, 0, 0], sla: [1, 1, 1, 0, 0, 0], proofs: [1, 1, 1, 0, 0, 0], reports: [1, 1, 1, 0, 0, 0],
     create: [1, 1, 1, 0, 0, 1], validate: [1, 1, 1, 0, 0, 0], assign: [0, 0, 0, 1, 0, 0], collect: [0, 0, 0, 0, 1, 0], accept: [0, 0, 0, 0, 0, 1], acceptHws: [1, 0, 1, 0, 0, 0], vconfirm: [0, 0, 0, 1, 0, 0],
@@ -13,10 +13,10 @@
     users: [1, 1, 1, 0, 0, 0], bases: [1, 1, 1, 0, 0, 0], vendors: [1, 1, 1, 0, 0, 0], rates: [1, 1, 0, 0, 0, 0], deactivate: [1, 1, 0, 0, 0, 0], delete: [1, 0, 0, 0, 0, 0],
     undo: [1, 0, 0, 0, 0, 0], notif: [1, 1, 1, 0, 0, 0], audit: [1, 1, 1, 0, 0, 0]
   };
-  const defaultPerms = () => { const p = {}; Object.keys(PERM_DEFAULTS).forEach(k => { p[k] = {}; ROLES.forEach((r, i) => p[k][r] = !!PERM_DEFAULTS[k][i]) }); return p };
+  const defaultPerms = () => { const p = {}; Object.keys(PERM_DEFAULTS).forEach(k => { p[k] = {}; ROLES.forEach((r, i) => p[k][r] = !!PERM_DEFAULTS[k][r === 'vendorco' ? 3 : i]) }); return p };
   function permsOf(st) { const p = defaultPerms(), sp = (st && st.perms) || {}; Object.keys(p).forEach(k => ROLES.forEach(r => { if (sp[k] && typeof sp[k][r] === 'boolean') p[k][r] = sp[k][r] })); return p }
   const canW = (w, u, k) => !!permsOf(w.meta('settings', {}))[k][u.role];
-  const ROLE = { admin: 'Administrator', manager: 'HWS Manager', hws: 'HWS Staff', vendor: 'Vendor Admin', driver: 'Driver', user: 'Regional User' };
+  const ROLE = { admin: 'Administrator', manager: 'HWS Manager', hws: 'HWS Staff', vendor: 'Vendor Admin', vendorco: 'Vendor Co-admin / Assistant', driver: 'Driver', user: 'Regional User' };
   const NAME = 'hwotg-offline', SKEY = 'hwotg.offline.session', SESSION_DAYS = 14;
   const bc = 'BroadcastChannel' in window ? new BroadcastChannel(NAME) : null;
   const clone = x => JSON.parse(JSON.stringify(x));
@@ -140,7 +140,7 @@
   const userSees = (u, r) => r.requestor === u.id || (!!u.base && (r.to === u.base || r.to2 === u.base));
   function inScope(u, r) {
     if (!r) return false; if (isHWS(u)) return true;
-    if (u.role === 'vendor') return !!u.vendor && r.vendor === u.vendor;
+    if (u.role === 'vendor' || u.role === 'vendorco') return !!u.vendor && r.vendor === u.vendor;
     if (u.role === 'driver') return !!u.driver && r.driver === u.driver;
     return userSees(u, r)
   }
@@ -150,7 +150,7 @@
     const users = isHWS(u) || canW(w, u, 'users') ? w.all('users')
       : [w.get('users', u.id)].concat(u.role === 'user' ? w.all('users').filter(x => isHWS(x) && x.active).map(x => ({ id: x.id, username: '', name: x.name, role: x.role, active: true })) : []);
     let drivers = w.all('drivers');
-    if (u.role === 'vendor') drivers = drivers.filter(d => d.vendor === u.vendor);
+    if (u.role === 'vendor' || u.role === 'vendorco') drivers = drivers.filter(d => d.vendor === u.vendor);
     else if (u.role === 'driver') drivers = drivers.filter(d => d.id === u.driver || reqs.some(r => r.driver === d.id));
     else if (u.role === 'user') drivers = drivers.filter(d => reqs.some(r => r.driver === d.id));
     const st = w.meta('settings', {});
@@ -179,7 +179,7 @@
         else if (c === 'audit') { if (!old) w.put(c, Object.assign(x, { user: u.name })) }
         else if (c === 'users') {
           const onlyActive = old && Object.keys(Object.assign({}, old, x)).every(k => k === 'active' || k === 'pw' || JSON.stringify(old[k]) === JSON.stringify(x[k]));
-          const vendorLogin = !old && ['vendor', 'driver'].includes(x.role) && canW(w, u, 'vendors');
+          const vendorLogin = !old && ['vendor', 'vendorco', 'driver'].includes(x.role) && canW(w, u, 'vendors');
           if (!(canW(w, u, 'users') || vendorLogin || (onlyActive && canW(w, u, 'deactivate')))) throw new Denied('Your role cannot change user accounts.');
           if (old && onlyActive && old.active !== x.active && !canW(w, u, 'deactivate')) throw new Denied('Your role cannot deactivate accounts.');
           if (old && x.pw && !canW(w, u, 'delete')) throw new Denied('Your role cannot reset passwords.');
