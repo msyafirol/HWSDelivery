@@ -18,7 +18,7 @@ const SESSION_DAYS = 14;
 const COLLS = ['users', 'vendors', 'drivers', 'bases', 'routes', 'reqs', 'notifs', 'audit'];
 const HWS = ['admin', 'manager', 'hws'], LEAD = ['admin', 'manager'];
 // Role permissions the Administrator can tick or untick. Defaults: [admin, manager, hws, vendor, driver, user].
-const ROLES = ['admin', 'manager', 'hws', 'vendor', 'driver', 'user'];
+const ROLES = ['admin', 'manager', 'hws', 'vendor', 'driver', 'user', 'vendorco'];
 const PERM_DEFAULTS = {
   dash: [1, 1, 1, 0, 0, 0], cost: [1, 1, 1, 0, 0, 0], vendorDash: [1, 1, 1, 1, 0, 0], sla: [1, 1, 1, 0, 0, 0], proofs: [1, 1, 1, 0, 0, 0], reports: [1, 1, 1, 0, 0, 0],
   create: [1, 1, 1, 0, 0, 1], validate: [1, 1, 1, 0, 0, 0], assign: [0, 0, 0, 1, 0, 0], collect: [0, 0, 0, 0, 1, 0], accept: [0, 0, 0, 0, 0, 1], acceptHws: [1, 0, 1, 0, 0, 0], vconfirm: [0, 0, 0, 1, 0, 0],
@@ -26,7 +26,7 @@ const PERM_DEFAULTS = {
   users: [1, 1, 1, 0, 0, 0], bases: [1, 1, 1, 0, 0, 0], vendors: [1, 1, 1, 0, 0, 0], rates: [1, 1, 0, 0, 0, 0], deactivate: [1, 1, 0, 0, 0, 0], delete: [1, 0, 0, 0, 0, 0],
   undo: [1, 0, 0, 0, 0, 0], notif: [1, 1, 1, 0, 0, 0], audit: [1, 1, 1, 0, 0, 0]
 };
-const defaultPerms = () => { const p = {}; Object.keys(PERM_DEFAULTS).forEach(k => { p[k] = {}; ROLES.forEach((r, i) => p[k][r] = !!PERM_DEFAULTS[k][i]) }); return p };
+const defaultPerms = () => { const p = {}; Object.keys(PERM_DEFAULTS).forEach(k => { p[k] = {}; ROLES.forEach((r, i) => p[k][r] = !!PERM_DEFAULTS[k][r === 'vendorco' ? 3 : i]) }); return p };
 function permsOf(st) { const p = defaultPerms(), sp = (st && st.perms) || {}; Object.keys(p).forEach(k => ROLES.forEach(r => { if (sp[k] && typeof sp[k][r] === 'boolean') p[k][r] = sp[k][r] })); return p }
 const can = (u, k) => !!permsOf(getMeta('settings', {}))[k][u.role];
 
@@ -100,7 +100,7 @@ const isHWS = u => HWS.includes(u.role), isLead = u => LEAD.includes(u.role);
 const userSees = (u, r) => r.requestor === u.id || (!!u.base && (r.to === u.base || r.to2 === u.base));
 function inScope(u, r) {
   if (!r) return false; if (isHWS(u)) return true;
-  if (u.role === 'vendor') return !!u.vendor && r.vendor === u.vendor;
+  if (u.role === 'vendor' || u.role === 'vendorco') return !!u.vendor && r.vendor === u.vendor;
   if (u.role === 'driver') return !!u.driver && r.driver === u.driver;
   return userSees(u, r)
 }
@@ -110,7 +110,7 @@ function snapshot(u) {
   const users = isHWS(u) || can(u, 'users') ? all('users')
     : [getRec('users', u.id)].concat(u.role === 'user' ? all('users').filter(x => isHWS(x) && x.active).map(x => ({ id: x.id, username: '', name: x.name, role: x.role, active: true })) : []);
   let drivers = all('drivers');
-  if (u.role === 'vendor') drivers = drivers.filter(d => d.vendor === u.vendor);
+  if (u.role === 'vendor' || u.role === 'vendorco') drivers = drivers.filter(d => d.vendor === u.vendor);
   else if (u.role === 'driver') drivers = drivers.filter(d => d.id === u.driver || reqs.some(r => r.driver === d.id));
   else if (u.role === 'user') drivers = drivers.filter(d => reqs.some(r => r.driver === d.id));
   const st = getMeta('settings', {});
@@ -157,7 +157,7 @@ function applySync(u, body) {
         else if (c === 'audit') { if (!old) putRec(c, Object.assign(x, { user: u.name, role: x.role })) }
         else if (c === 'users') {
           const onlyActive = old && Object.keys(Object.assign({}, old, x)).every(k => k === 'active' || k === 'pw' || JSON.stringify(old[k]) === JSON.stringify(x[k]));
-          const vendorLogin = !old && ['vendor', 'driver'].includes(x.role) && can(u, 'vendors');
+          const vendorLogin = !old && ['vendor', 'vendorco', 'driver'].includes(x.role) && can(u, 'vendors');
           if (!(can(u, 'users') || vendorLogin || (onlyActive && can(u, 'deactivate')))) throw new Denied('Your role cannot change user accounts.');
           if (old && onlyActive && old.active !== x.active && !can(u, 'deactivate')) throw new Denied('Your role cannot deactivate accounts.');
           if (old && x.pw && !can(u, 'delete')) throw new Denied('Your role cannot reset passwords.');
@@ -283,7 +283,7 @@ let mailQ = Promise.resolve(), lastOrigin = '';
 function recipients(n, r) {
   return all('users').filter(u => u.active && okEmail(u.email) && u.id !== n.by && (
     (LEAD.includes(u.role) && (n.to.includes('hws') || n.to.includes('lead'))) || (u.role === 'hws' && n.to.includes('hws')) ||
-    (u.role === 'user' && n.to.includes('user') && userSees(u, r)) || (u.role === 'vendor' && n.to.includes('vendor') && r.vendor === u.vendor) ||
+    (u.role === 'user' && n.to.includes('user') && userSees(u, r)) || ((u.role === 'vendor' || u.role === 'vendorco') && n.to.includes('vendor') && r.vendor === u.vendor) ||
     (u.role === 'driver' && n.to.includes('driver') && r.driver === u.driver)))
 }
 // New notifications become emails to the people they are meant for, when the Email channel is on.
@@ -325,7 +325,7 @@ function whoami(req) {
 const fails = new Map();
 function throttled(key) { const f = fails.get(key); return f && f.n >= 8 && Date.now() - f.t < 10 * 60e3 }
 function failed(key) { const f = fails.get(key) || { n: 0, t: 0 }; f.n = Date.now() - f.t > 10 * 60e3 ? 1 : f.n + 1; f.t = Date.now(); fails.set(key, f) }
-const audit = (u, action, remarks) => putRec('audit', { id: 'a' + crypto.randomBytes(6).toString('hex'), ts: Date.now(), user: u.name, role: { admin: 'Administrator', manager: 'HWS Manager', hws: 'HWS Staff', vendor: 'Vendor Admin', driver: 'Driver', user: 'Regional User' }[u.role] || '', action, no: '', remarks: remarks || '' });
+const audit = (u, action, remarks) => putRec('audit', { id: 'a' + crypto.randomBytes(6).toString('hex'), ts: Date.now(), user: u.name, role: { admin: 'Administrator', manager: 'HWS Manager', hws: 'HWS Staff', vendor: 'Vendor Admin', vendorco: 'Vendor Co-admin / Assistant', driver: 'Driver', user: 'Regional User' }[u.role] || '', action, no: '', remarks: remarks || '' });
 
 async function api(req, res, url) {
   const p = url.pathname, m = req.method;

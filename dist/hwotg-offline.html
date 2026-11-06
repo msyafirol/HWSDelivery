@@ -760,7 +760,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   const COLLS = ['users', 'vendors', 'drivers', 'bases', 'routes', 'reqs', 'notifs', 'audit'];
   const HWS = ['admin', 'manager', 'hws'], LEAD = ['admin', 'manager'];
   // Role permissions the Administrator can tick or untick. Defaults: [admin, manager, hws, vendor, driver, user].
-  const ROLES = ['admin', 'manager', 'hws', 'vendor', 'driver', 'user'];
+  const ROLES = ['admin', 'manager', 'hws', 'vendor', 'driver', 'user', 'vendorco'];
   const PERM_DEFAULTS = {
     dash: [1, 1, 1, 0, 0, 0], cost: [1, 1, 1, 0, 0, 0], vendorDash: [1, 1, 1, 1, 0, 0], sla: [1, 1, 1, 0, 0, 0], proofs: [1, 1, 1, 0, 0, 0], reports: [1, 1, 1, 0, 0, 0],
     create: [1, 1, 1, 0, 0, 1], validate: [1, 1, 1, 0, 0, 0], assign: [0, 0, 0, 1, 0, 0], collect: [0, 0, 0, 0, 1, 0], accept: [0, 0, 0, 0, 0, 1], acceptHws: [1, 0, 1, 0, 0, 0], vconfirm: [0, 0, 0, 1, 0, 0],
@@ -768,10 +768,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     users: [1, 1, 1, 0, 0, 0], bases: [1, 1, 1, 0, 0, 0], vendors: [1, 1, 1, 0, 0, 0], rates: [1, 1, 0, 0, 0, 0], deactivate: [1, 1, 0, 0, 0, 0], delete: [1, 0, 0, 0, 0, 0],
     undo: [1, 0, 0, 0, 0, 0], notif: [1, 1, 1, 0, 0, 0], audit: [1, 1, 1, 0, 0, 0]
   };
-  const defaultPerms = () => { const p = {}; Object.keys(PERM_DEFAULTS).forEach(k => { p[k] = {}; ROLES.forEach((r, i) => p[k][r] = !!PERM_DEFAULTS[k][i]) }); return p };
+  const defaultPerms = () => { const p = {}; Object.keys(PERM_DEFAULTS).forEach(k => { p[k] = {}; ROLES.forEach((r, i) => p[k][r] = !!PERM_DEFAULTS[k][r === 'vendorco' ? 3 : i]) }); return p };
   function permsOf(st) { const p = defaultPerms(), sp = (st && st.perms) || {}; Object.keys(p).forEach(k => ROLES.forEach(r => { if (sp[k] && typeof sp[k][r] === 'boolean') p[k][r] = sp[k][r] })); return p }
   const canW = (w, u, k) => !!permsOf(w.meta('settings', {}))[k][u.role];
-  const ROLE = { admin: 'Administrator', manager: 'HWS Manager', hws: 'HWS Staff', vendor: 'Vendor Admin', driver: 'Driver', user: 'Regional User' };
+  const ROLE = { admin: 'Administrator', manager: 'HWS Manager', hws: 'HWS Staff', vendor: 'Vendor Admin', vendorco: 'Vendor Co-admin / Assistant', driver: 'Driver', user: 'Regional User' };
   const NAME = 'hwotg-offline', SKEY = 'hwotg.offline.session', SESSION_DAYS = 14;
   const bc = 'BroadcastChannel' in window ? new BroadcastChannel(NAME) : null;
   const clone = x => JSON.parse(JSON.stringify(x));
@@ -895,7 +895,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   const userSees = (u, r) => r.requestor === u.id || (!!u.base && (r.to === u.base || r.to2 === u.base));
   function inScope(u, r) {
     if (!r) return false; if (isHWS(u)) return true;
-    if (u.role === 'vendor') return !!u.vendor && r.vendor === u.vendor;
+    if (u.role === 'vendor' || u.role === 'vendorco') return !!u.vendor && r.vendor === u.vendor;
     if (u.role === 'driver') return !!u.driver && r.driver === u.driver;
     return userSees(u, r)
   }
@@ -905,7 +905,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const users = isHWS(u) || canW(w, u, 'users') ? w.all('users')
       : [w.get('users', u.id)].concat(u.role === 'user' ? w.all('users').filter(x => isHWS(x) && x.active).map(x => ({ id: x.id, username: '', name: x.name, role: x.role, active: true })) : []);
     let drivers = w.all('drivers');
-    if (u.role === 'vendor') drivers = drivers.filter(d => d.vendor === u.vendor);
+    if (u.role === 'vendor' || u.role === 'vendorco') drivers = drivers.filter(d => d.vendor === u.vendor);
     else if (u.role === 'driver') drivers = drivers.filter(d => d.id === u.driver || reqs.some(r => r.driver === d.id));
     else if (u.role === 'user') drivers = drivers.filter(d => reqs.some(r => r.driver === d.id));
     const st = w.meta('settings', {});
@@ -934,7 +934,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         else if (c === 'audit') { if (!old) w.put(c, Object.assign(x, { user: u.name })) }
         else if (c === 'users') {
           const onlyActive = old && Object.keys(Object.assign({}, old, x)).every(k => k === 'active' || k === 'pw' || JSON.stringify(old[k]) === JSON.stringify(x[k]));
-          const vendorLogin = !old && ['vendor', 'driver'].includes(x.role) && canW(w, u, 'vendors');
+          const vendorLogin = !old && ['vendor', 'vendorco', 'driver'].includes(x.role) && canW(w, u, 'vendors');
           if (!(canW(w, u, 'users') || vendorLogin || (onlyActive && canW(w, u, 'deactivate')))) throw new Denied('Your role cannot change user accounts.');
           if (old && onlyActive && old.active !== x.active && !canW(w, u, 'deactivate')) throw new Denied('Your role cannot deactivate accounts.');
           if (old && x.pw && !canW(w, u, 'delete')) throw new Denied('Your role cannot reset passwords.');
@@ -1091,8 +1091,10 @@ const ST=id=>STATES.find(s=>s.id===id);
 const ZONE=s=>s.region==='East Malaysia'?'C':['SGR','KUL','PJY','NSN'].includes(s.id)?'A':'B';
 const ZN={A:'Zone A · Klang Valley',B:'Zone B · Peninsular',C:'Zone C · East Malaysia'};
 const ITEMS=['HDD 2.4TB SAS 10K','System board X-series','Power supply 750W','RAID controller 12Gb','DDR4 32GB RDIMM','Fan module hot-swap','NIC 10GbE dual port','Switch module 24-port','Laptop LCD panel 14"','SSD 960GB enterprise','Router line card','Optical transceiver SFP+'];
-const ROLE={admin:'Administrator',manager:'HWS Manager',hws:'HWS Staff',vendor:'Vendor Admin',driver:'Driver',user:'Regional User'};
+const ROLE={admin:'Administrator',manager:'HWS Manager',hws:'HWS Staff',vendor:'Vendor Admin',vendorco:'Vendor Co-admin / Assistant',driver:'Driver',user:'Regional User'};
 const isHWS=u=>!!u&&['admin','manager','hws'].includes(u.role);
+// Vendor PICs: the Vendor Admin and any co-admins or assistants work on the same vendor's jobs and drivers.
+const isV=u=>!!u&&(u.role==='vendor'||u.role==='vendorco');
 // Role permissions are ticked or unticked by the Administrator (Users, bases, rates > Role permissions).
 const can=(k,u)=>{u=u||me();const p=DB&&DB.perms&&DB.perms[k];return!!(u&&p&&p[u.role])};
 const isLead=u=>!!u&&['admin','manager'].includes(u.role);
@@ -1151,7 +1153,7 @@ function say(text){if(!voiceOn()||!window.speechSynthesis||!text)return;try{fema
 const VOICE={created:{hws:'New request. Please validate.',_:'New request.'},validated:{vendor:'New job. Please assign a driver.',_:'Job sent to vendor.'},assigned:{driver:'New job assigned. Please collect.',_:'Driver assigned.'},collected:{_:'Job collected.'},transit:{user:'Your delivery is on the way.',_:'Delivery in transit.'},
   delivered:{user:'Your part was delivered.',_:'Job delivered.'},accepted:{vendor:'Job accepted. Please confirm completion.',_:'Job accepted.'},rejected:{hws:'Job rejected. Please re-dispatch.',_:'Job rejected.'},vconfirm:{hws:'Vendor confirmed. Please close the job.',_:'Vendor confirmed.'},
   completed:{_:'Job completed.'},signed:{_:'Delivered and signed. Job completed.'},redispatch:{_:'Job re-dispatched.'},undo:{_:'A job step was undone.'},sla:{_:'S L A breach. Please check the job.'}};
-function voiceLine(n,u){const k=n.k||Object.keys(NOTE).find(x=>NOTE[x][0]===n.title)||(/undone/i.test(n.title)?'undo':'');const m=VOICE[k];if(!m)return n.title;if(k==='delivered'&&isHWS(u)){const r=DB.reqs.find(x=>x.id===n.rid);if(r&&destsOf(r).some(hwsRecv)&&canAccept(r))return'Delivered to the warehouse. Please accept the job.'}return m[isHWS(u)?'hws':u.role]||m._}
+function voiceLine(n,u){const k=n.k||Object.keys(NOTE).find(x=>NOTE[x][0]===n.title)||(/undone/i.test(n.title)?'undo':'');const m=VOICE[k];if(!m)return n.title;if(k==='delivered'&&isHWS(u)){const r=DB.reqs.find(x=>x.id===n.rid);if(r&&destsOf(r).some(hwsRecv)&&canAccept(r))return'Delivered to the warehouse. Please accept the job.'}return m[isHWS(u)?'hws':isV(u)?'vendor':u.role]||m._}
 const isBadN=n=>/SLA|rejected|undone/i.test(n.title),isOkN=n=>/accepted|closed|confirmed/i.test(n.title);
 function popup(n){let box=$('#alerts');if(!box){box=document.createElement('div');box.id='alerts';box.setAttribute('aria-live','polite');document.body.appendChild(box)}
   const el=document.createElement('div');el.className='alert'+(isBadN(n)?' bad':isOkN(n)?' ok':'');el.dataset.act='open';el.dataset.id=n.rid;el.dataset.n=n.id;el.setAttribute('role','status');
@@ -1227,7 +1229,7 @@ const costView=r=>r.cost||costOf(r);
 const costTot=r=>{const c=costView(r);return c?c.total:0};
 
 /* ================= scope ================= */
-function scope(){const u=me();if(!u)return[];let a=DB.reqs;if(u.role==='user')a=a.filter(r=>userSees(u,r));if(u.role==='vendor')a=a.filter(r=>r.vendor===u.vendor);if(u.role==='driver')a=a.filter(r=>r.driver===u.driver);return a}
+function scope(){const u=me();if(!u)return[];let a=DB.reqs;if(u.role==='user')a=a.filter(r=>userSees(u,r));if(isV(u))a=a.filter(r=>r.vendor===u.vendor);if(u.role==='driver')a=a.filter(r=>r.driver===u.driver);return a}
 function periodStart(){const p=S.period,now=new Date();if(p==='mtd')return new Date(now.getFullYear(),now.getMonth(),1).getTime();if(p==='all')return 0;return Date.now()-(+p)*D}
 const PLBL={mtd:'Month to date','30':'Last 30 days','90':'Last 90 days','180':'Last 180 days',all:'All time'};
 const inPeriod=a=>{const s=periodStart();return a.filter(r=>r.t.created>=s)};
@@ -1240,7 +1242,7 @@ function notify(r,k,ts,title){const n=NOTE[k];if(!n)return;const u=me();DB.notif
 const chans=()=>[DB.ch.inapp&&'In-app',DB.ch.email&&'Email',DB.ch.teams&&'Teams',DB.ch.sms&&'SMS'].filter(Boolean);
 function notifFor(){const u=me();if(!u)return[];return DB.notifs.filter(n=>{const r=DB.reqs.find(x=>x.id===n.rid);if(!r)return false;
   if(isLead(u))return n.to.includes('hws')||n.to.includes('lead');if(u.role==='hws')return n.to.includes('hws');
-  if(u.role==='user')return n.to.includes('user')&&userSees(u,r);if(u.role==='vendor')return n.to.includes('vendor')&&r.vendor===u.vendor;
+  if(u.role==='user')return n.to.includes('user')&&userSees(u,r);if(isV(u))return n.to.includes('vendor')&&r.vendor===u.vendor;
   if(u.role==='driver')return n.to.includes('driver')&&r.driver===u.driver;return false})}
 
 /* ================= history ================= */
@@ -1368,23 +1370,23 @@ function viewCost(){const rs=inPeriod(scope()).filter(r=>r.vendor),cs=rs.map(r=>
 /* ---------- vendor performance ---------- */
 function driverStats(d,days){const since=Date.now()-days*D;const a=DB.reqs.filter(r=>r.driver===d.id&&r.t.assigned>=since);const dl=a.filter(r=>r.t.delivered),dec=a.filter(r=>r.t.decided),ok=dec.filter(r=>!r.rejected);const dh=dl.map(r=>(r.t.delivered-r.t.collected)/H);
   return{asg:a.length,done:dl.length,succ:dec.length?pct(ok.length,dec.length):null,avgH:dh.length?avg(dh):null,active:DB.reqs.filter(r=>r.driver===d.id&&ACTIVE.includes(statusOf(r))).length,util:Math.min(100,pct(a.length,14)),sla:a.length?compliance(a):null}}
-function viewVendor(){const u=me();const vid=u.role==='vendor'?u.vendor:S.vsel;
+function viewVendor(){const u=me();const vid=isV(u)?u.vendor:S.vsel;
   const vrs=DB.reqs.filter(r=>!vid||r.vendor===vid),ds=DB.drivers.filter(d=>!vid||d.vendor===vid),st=ds.map(d=>({d,s:driverStats(d,30)}));
   const act=st.filter(x=>x.s.active>0).length,asg=sum(st.map(x=>x.s.asg)),dn=sum(st.map(x=>x.s.done));
   const dec=vrs.filter(r=>r.t.decided&&r.t.decided>Date.now()-30*D);const r30=vrs.filter(r=>r.t.created>Date.now()-30*D);
   const dlh=vrs.filter(r=>r.t.delivered>Date.now()-30*D).map(r=>(r.t.delivered-r.t.collected)/H);
   const days=[],cnt=[];for(let i=13;i>=0;i--){const d0=new Date();d0.setHours(0,0,0,0);const s=d0.getTime()-i*D;days.push(new Date(s).getDate()+'');cnt.push(vrs.filter(r=>r.t.delivered>=s&&r.t.delivered<s+D).length)}
-  const title=u.role==='vendor'?esc(V(vid).name):'Vendor performance';
-  const right=u.role==='vendor'?'':'<label class="hint" style="display:flex;gap:6px;align-items:center">Vendor <select data-vsel>'+'<option value="">All vendors</option>'+DB.vendors.map(v=>'<option value="'+v.id+'"'+(v.id===vid?' selected':'')+'>'+esc(v.name)+'</option>').join('')+'</select></label>';
-  let h=head(u.role==='vendor'?'Vendor portal':'Dashboards',title,'Jobs, drivers and SLA over the last 30 days',right);
-  if(u.role==='vendor')h+=jobBoard(vrs);
+  const title=isV(u)?esc(V(vid).name):'Vendor performance';
+  const right=isV(u)?'':'<label class="hint" style="display:flex;gap:6px;align-items:center">Vendor <select data-vsel>'+'<option value="">All vendors</option>'+DB.vendors.map(v=>'<option value="'+v.id+'"'+(v.id===vid?' selected':'')+'>'+esc(v.name)+'</option>').join('')+'</select></label>';
+  let h=head(isV(u)?'Vendor portal':'Dashboards',title,'Jobs, drivers and SLA over the last 30 days',right);
+  if(isV(u))h+=jobBoard(vrs);
   h+='<div class="kpis">'+kpi('Active drivers',act+' / '+ds.length,'On a live job now','acc')+kpi('Jobs assigned',asg,'Last 30 days')+kpi('Jobs completed',dn,'Delivered, last 30 days','ok')+kpi('Delivery success rate',(dec.length?pct(dec.filter(r=>!r.rejected).length,dec.length):0)+'%','Accepted by stores')+kpi('SLA compliance',compliance(r30)+'%','Jobs created in 30 days',compliance(r30)>=90?'ok':'warn')+kpi('Avg delivery time',dur(dlh.length?avg(dlh):null),'Collection to delivery')+'</div>';
   h+='<div class="grid">'+panel('Driver workload','live jobs per driver',hbar(st.map(x=>({l:x.d.name,v:x.s.active}))))+panel('Driver utilization','30-day jobs vs 14-job capacity',hbar(st.map(x=>({l:x.d.name,v:x.s.util,c:x.s.util>85?'var(--warn)':''})),{unit:'%'}))+'</div>';
   h+='<div class="grid">'+panel('Daily delivery count','last 14 days, day of month',vbar(days,cnt,{label:'Daily deliveries'}))+panel('Needs attention','past SLA',attention(vrs,6),true)+'</div>';
   h+=panel('Driver performance','last 30 days',driverTable(ds),true);
   return h}
 function driverTable(ds,edit){if(!ds.length)return'<div class="empty">No drivers registered.</div>';return'<div class="tw"><table class="t"><thead><tr><th>Driver</th><th class="hide-m">Vendor</th><th class="hide-m">Vehicle</th><th>Contact</th><th class="num">Live</th><th class="num">Assigned</th><th class="num">Completed</th><th class="num">Success</th><th class="num">SLA</th><th class="num hide-m">Avg delivery</th>'+(edit?'<th></th>':'')+'</tr></thead><tbody>'+ds.map(d=>{const s=driverStats(d,30);return'<tr'+(d.removed?' class="off"':S.editId===d.id?' class="sel"':'')+'><td>'+esc(d.name)+(d.removed?' <span class="tag">Removed</span>':d.active?'':' <span class="tag">Inactive</span>')+'</td><td class="hide-m">'+esc(V(d.vendor).name)+'</td><td class="hide-m">'+esc(d.vehicle+' · '+d.plate)+'</td><td class="mono">'+esc(d.phone)+'</td><td class="num">'+s.active+'</td><td class="num">'+s.asg+'</td><td class="num">'+s.done+'</td><td class="num">'+(s.succ==null?'—':s.succ+'%')+'</td><td class="num">'+(s.sla==null?'—':'<span class="sla '+slaCls(s.sla)+'">'+s.sla+'%</span>')+'</td><td class="num hide-m">'+dur(s.avgH)+'</td>'+(edit?'<td><div class="row" style="flex-wrap:nowrap">'+(d.removed?'':(can('vendors')?'<button class="btn sm" data-act="editDriver" data-k="'+d.id+'">Edit</button>':'')+(can('delete')?'<button class="btn sm" data-act="del" data-k="driver" data-id="'+d.id+'">Delete</button>':''))+'</div></td>':'')+'</tr>'}).join('')+'</tbody></table></div>'}
-function viewDrivers(){const u=me(),ds=DB.drivers.filter(d=>u.role!=='vendor'||d.vendor===u.vendor);return head(u.role==='vendor'?'Vendor portal':'Operations','Drivers',ds.length+' drivers · workload and 30-day performance',can('vendors')?'<button class="btn pri" data-act="nav" data-v="admin" data-k="drivers">'+ico('plus',15)+'Register driver</button>':'')+panel('Drivers','',driverTable(ds),true)}
+function viewDrivers(){const u=me(),ds=DB.drivers.filter(d=>!isV(u)||d.vendor===u.vendor);return head(isV(u)?'Vendor portal':'Operations','Drivers',ds.length+' drivers · workload and 30-day performance',can('vendors')?'<button class="btn pri" data-act="nav" data-v="admin" data-k="drivers">'+ico('plus',15)+'Register driver</button>':'')+panel('Drivers','',driverTable(ds),true)}
 
 /* ---------- requests ---------- */
 function filtered(){let a=scope();const f=S.f,q=S.q.trim().toLowerCase();
@@ -1396,10 +1398,10 @@ function filtered(){let a=scope();const f=S.f,q=S.q.trim().toLowerCase();
 const refH=r=>r.ref?'<div class="hint">Req No. '+esc(r.ref)+'</div>':'';
 const sel=(id,l,opts,v)=>'<label>'+l+'<select data-f="'+id+'"><option value="">All</option>'+opts.map(o=>'<option value="'+esc(o[0])+'"'+(o[0]===v?' selected':'')+'>'+esc(o[1])+'</option>').join('')+'</select></label>';
 function viewRequests(){const u=me(),a=filtered(),f=S.f,proofs=S.view==='proofs';
-  const dr=DB.drivers.filter(d=>u.role!=='vendor'||d.vendor===u.vendor);
-  const ttl=proofs?'Proof documents':u.role==='vendor'?'Jobs':u.role==='user'?'My requests':u.role==='driver'?'Job history':'Requests';
+  const dr=DB.drivers.filter(d=>!isV(u)||d.vendor===u.vendor);
+  const ttl=proofs?'Proof documents':isV(u)?'Jobs':u.role==='user'?'My requests':u.role==='driver'?'Job history':'Requests';
   let right='';if(!proofs&&can('create'))right+='<button class="btn pri" data-act="nav" data-v="new">'+ico('plus',15)+'New request</button>';if(can('reports'))right+=expBtns('requests');
-  let h=head(proofs?'Operations':u.role==='vendor'?'Vendor portal':'Operations',ttl,a.length+' '+(a.length===1?'record':'records')+(S.q?' matching “'+esc(S.q)+'”':'')+(f.state?' in '+ST(f.state).name:''),right);
+  let h=head(proofs?'Operations':isV(u)?'Vendor portal':'Operations',ttl,a.length+' '+(a.length===1?'record':'records')+(S.q?' matching “'+esc(S.q)+'”':'')+(f.state?' in '+ST(f.state).name:''),right);
   h+='<div class="flt">'+sel('status','Status',STATUSES.map(s=>[s,s]),f.status)+(u.role==='user'?'':sel('state','State',STATES.map(s=>[s.id,s.name]),f.state)+sel('region','Region',REGIONS.map(s=>[s,s]),f.region))+(isHWS(u)?sel('vendor','Vendor',DB.vendors.map(v=>[v.id,v.name]),f.vendor):'')+sel('sla','SLA',[['green','Within SLA'],['amber','Near breach'],['red','Breached']],f.sla)+(u.role==='driver'||u.role==='user'?'':sel('driver','Driver',dr.map(d=>[d.id,d.name]),f.driver))+'<label>From<input type="date" data-f="from" value="'+(f.from||'')+'"></label><label>To<input type="date" data-f="to" value="'+(f.to||'')+'"></label><button class="btn" data-act="clr">Clear</button></div>';
   if(!a.length)return h+'<div class="panel empty">No request matches these filters.</div>';
   const showCost=can('cost')&&!proofs;
@@ -1509,12 +1511,12 @@ function viewAdmin(){const u=me(),tabs=admTabs(u);if(!tabs.includes(S.adm))S.adm
   const k=S.adm;
   if(k==='users')h+=admUsers(u);else if(k==='bases')h+=admBases(u);else if(k==='vendors')h+=admVendors(u);else if(k==='drivers')h+=admDrivers(u);else if(k==='rates')h+=admRates(u);else if(k==='notif')h+=admNotif();else if(k==='backup'&&LOCAL)h+=admBackup(u);else h+=admPerm();
   return h}
-function scopeLbl(x){return x.role==='vendor'?V(x.vendor).name:x.role==='driver'?((DR(x.driver)?DR(x.driver).name:'')+' · '+V(x.vendor).name):x.role==='user'?(x.base?B(x.base).name:'Own requests'):'All data'}
+function scopeLbl(x){return isV(x)?V(x.vendor).name:x.role==='driver'?((DR(x.driver)?DR(x.driver).name:'')+' · '+V(x.vendor).name):x.role==='user'?(x.base?B(x.base).name:'Own requests'):'All data'}
 function admUsers(u){const f=S.form==='user',ed=f&&S.editId?DB.users.find(x=>x.id===S.editId):null,self=ed&&ed.id===u.id;
   const v=k=>ed?esc(ed[k]||''):'',bo=sel=>DB.bases.filter(b=>b.active!==false||b.id===sel).map(b=>'<option value="'+b.id+'"'+(b.id===sel?' selected':'')+'>'+esc(b.name)+'</option>').join('');
-  const role0=ed?ed.role:'user',acts=can('users')||can('deactivate')||can('delete');
+  const pf=(!ed&&S.prefill)||{},role0=ed?ed.role:(pf.role||'user'),acts=can('users')||can('deactivate')||can('delete');
   let h='<div class="kpis">'+Object.keys(ROLE).map(k=>kpi(ROLE[k],DB.users.filter(x=>x.role===k&&x.active).length,DB.users.filter(x=>x.role===k&&!x.active).length+' inactive')).join('')+'</div>';
-  if(f)h+=panel(ed?'Edit user · '+esc(ed.name):'Register user','contact details and address','<form id="fu" class="f"><label>Full name<input id="fu-name" required value="'+v('name')+'"></label><label>Username<input id="fu-user" required autocomplete="off" placeholder="name.surname" value="'+v('username')+'"></label><label>Role<select id="fu-role"'+(self?' disabled':'')+'>'+Object.keys(ROLE).filter(k=>k!=='admin'||u.role==='admin').map(k=>'<option value="'+k+'"'+(k===role0?' selected':'')+'>'+ROLE[k]+'</option>').join('')+'</select></label><label>Mobile phone<input id="fu-phone" type="tel" required placeholder="+60 12-345 6789" value="'+v('phone')+'"></label><label>Email<input id="fu-email" type="email" placeholder="name@company.com" value="'+v('email')+'"></label><label id="fu-bw">Store (required)<select id="fu-base"><option value="">None</option>'+bo(ed?ed.base:'')+'</select></label><label id="fu-vw">Vendor<select id="fu-vendor">'+DB.vendors.map(x=>'<option value="'+x.id+'"'+(ed&&ed.vendor===x.id?' selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></label><label id="fu-dw">Driver record<select id="fu-driver"></select></label><label class="wide">Address<textarea id="fu-addr" placeholder="Street, postcode, city, state. Left blank, the base address is used.">'+v('address')+'</textarea></label>'+(ed?(self?'<p class="hint wide" style="margin:0">You cannot change your own role.</p>':'')+'<p class="hint wide" style="margin:0">To change the password, use Reset password in the table.</p>':'<label>Temporary password<input id="fu-pw" value="welcome123"></label>')+'<div class="wide row"><button class="btn pri" type="submit">'+(ed?'Save changes':'Register user')+'</button><button class="btn" type="button" data-act="form" data-k="">Cancel</button><span class="err" id="fu-err" role="alert"></span></div></form>')+'<div style="height:14px"></div>';
+  if(f)h+=panel(ed?'Edit user · '+esc(ed.name):'Register user','contact details and address','<form id="fu" class="f"><label>Full name<input id="fu-name" required value="'+v('name')+'"></label><label>Username<input id="fu-user" required autocomplete="off" placeholder="name.surname" value="'+v('username')+'"></label><label>Role<select id="fu-role"'+(self?' disabled':'')+'>'+Object.keys(ROLE).filter(k=>k!=='admin'||u.role==='admin').map(k=>'<option value="'+k+'"'+(k===role0?' selected':'')+'>'+ROLE[k]+'</option>').join('')+'</select></label><label>Mobile phone<input id="fu-phone" type="tel" required placeholder="+60 12-345 6789" value="'+v('phone')+'"></label><label>Email<input id="fu-email" type="email" placeholder="name@company.com" value="'+v('email')+'"></label><label id="fu-bw">Store (required)<select id="fu-base"><option value="">None</option>'+bo(ed?ed.base:'')+'</select></label><label id="fu-vw">Vendor<select id="fu-vendor">'+DB.vendors.map(x=>'<option value="'+x.id+'"'+((ed?ed.vendor:pf.vendor)===x.id?' selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></label><label id="fu-dw">Driver record<select id="fu-driver"></select></label><label class="wide">Address<textarea id="fu-addr" placeholder="Street, postcode, city, state. Left blank, the base address is used.">'+v('address')+'</textarea></label>'+(ed?(self?'<p class="hint wide" style="margin:0">You cannot change your own role.</p>':'')+'<p class="hint wide" style="margin:0">To change the password, use Reset password in the table.</p>':'<label>Temporary password<input id="fu-pw" value="welcome123"></label>')+'<div class="wide row"><button class="btn pri" type="submit">'+(ed?'Save changes':'Register user')+'</button><button class="btn" type="button" data-act="form" data-k="">Cancel</button><span class="err" id="fu-err" role="alert"></span></div></form>')+'<div style="height:14px"></div>';
   h+=panel('Users',DB.users.length+' accounts','<div class="tw"><table class="t"><thead><tr><th>Name</th><th>Role</th><th>Contact</th><th class="hide-m">Base and address</th><th>Status</th>'+(acts?'<th></th>':'')+'</tr></thead><tbody>'+DB.users.map(x=>{const mayEdit=can('users')&&(x.role!=='admin'||u.role==='admin'),b=[];
     if(mayEdit)b.push('<button class="btn sm" data-act="editUser" data-k="'+x.id+'">Edit</button>');
     if(x.id!==u.id){if(can('deactivate')&&(x.role!=='admin'||u.role==='admin'))b.push('<button class="btn sm" data-act="toggleUser" data-k="'+x.id+'">'+(x.active?'Deactivate':'Activate')+'</button>');if(can('delete'))b.push('<button class="btn sm" data-act="resetPw" data-k="'+x.id+'">Reset password</button><button class="btn sm" data-act="del" data-k="user" data-id="'+x.id+'">Delete</button>')}else b.push('<span class="hint">You</span>');
@@ -1532,7 +1534,7 @@ function admVendors(u){const f=S.form==='vendor',ed=f&&S.editId?DB.vendors.find(
     +'<div class="wide lbl" style="margin:0">Weekend &amp; public holiday rates (leave blank to use the weekday rate)</div>'+RK.map(k=>'<label>'+k[1]+'<input id="fv-'+k[0]+'We" type="number" step="0.01" min="0" value="'+v(k[0]+'We')+'" placeholder="Same as weekday"></label>').join('')
     +(ed?'':'<label class="wide chk"><input type="checkbox" id="fv-admin" checked> Also create a vendor admin login for the contact person</label>')+'<div class="wide row"><button class="btn pri" type="submit">'+(ed?'Save changes':'Register vendor')+'</button><button class="btn" type="button" data-act="form" data-k="">Cancel</button><span class="err" id="fv-err" role="alert"></span></div></form>')+'<div style="height:14px"></div>';
   const acts=can('vendors')||can('deactivate');
-  h+=panel('Vendors',DB.vendors.length+' registered','<div class="tw"><table class="t"><thead><tr><th>Vendor</th><th class="hide-m">SSM no.</th><th>Contact</th><th>Coverage</th><th class="num">Drivers</th><th class="num">Live jobs</th><th>Status</th>'+(acts?'<th></th>':'')+'</tr></thead><tbody>'+DB.vendors.map(x=>'<tr'+(S.editId===x.id?' class="sel"':'')+'><td>'+esc(x.name)+'</td><td class="hide-m mono">'+esc(x.regNo||'—')+'</td><td>'+esc(x.contact)+'<div class="hint mono">'+esc(x.phone||'')+'</div><div class="hint">'+esc(x.email||'')+'</div></td><td>'+x.coverage.map(g=>'<span class="tag">'+g+'</span>').join(' ')+'</td><td class="num">'+DB.drivers.filter(d=>d.vendor===x.id).length+'</td><td class="num">'+DB.reqs.filter(r=>r.vendor===x.id&&isOpen(r)).length+'</td><td>'+(x.active?'<span class="sla green">Active</span>':'<span class="sla na">Inactive</span>')+'</td>'+(acts?'<td><div class="row" style="flex-wrap:nowrap">'+(can('vendors')?'<button class="btn sm" data-act="editVendor" data-k="'+x.id+'">Edit</button>':'')+(can('deactivate')?'<button class="btn sm" data-act="toggleVendor" data-k="'+x.id+'">'+(x.active?'Deactivate':'Activate')+'</button>':'')+'</div></td>':'')+'</tr>').join('')+'</tbody></table></div>',true,(f||!can('vendors'))?'':'<button class="btn sm pri" data-act="form" data-k="vendor">'+ico('plus',15)+'Register vendor</button>');
+  h+=panel('Vendors',DB.vendors.length+' registered','<div class="tw"><table class="t"><thead><tr><th>Vendor</th><th class="hide-m">SSM no.</th><th>Contact</th><th>PICs</th><th>Coverage</th><th class="num">Drivers</th><th class="num">Live jobs</th><th>Status</th>'+(acts?'<th></th>':'')+'</tr></thead><tbody>'+DB.vendors.map(x=>'<tr'+(S.editId===x.id?' class="sel"':'')+'><td>'+esc(x.name)+'</td><td class="hide-m mono">'+esc(x.regNo||'—')+'</td><td>'+esc(x.contact)+'<div class="hint mono">'+esc(x.phone||'')+'</div><div class="hint">'+esc(x.email||'')+'</div></td><td>'+DB.users.filter(p=>isV(p)&&p.vendor===x.id).sort((a,b)=>(a.role==='vendor'?0:1)-(b.role==='vendor'?0:1)).map(p=>'<div>'+esc(p.name)+' <span class="tag'+(p.role==='vendor'?' acc':'')+'">'+(p.role==='vendor'?'Admin':'Co-admin')+'</span>'+(p.active?'':' <span class="tag">Inactive</span>')+'</div>').join('')+(can('users')?'<button class="btn sm" data-act="addPic" data-k="'+x.id+'" style="margin-top:4px">'+ico('plus',13)+'Add PIC</button>':'')+'</td><td>'+x.coverage.map(g=>'<span class="tag">'+g+'</span>').join(' ')+'</td><td class="num">'+DB.drivers.filter(d=>d.vendor===x.id).length+'</td><td class="num">'+DB.reqs.filter(r=>r.vendor===x.id&&isOpen(r)).length+'</td><td>'+(x.active?'<span class="sla green">Active</span>':'<span class="sla na">Inactive</span>')+'</td>'+(acts?'<td><div class="row" style="flex-wrap:nowrap">'+(can('vendors')?'<button class="btn sm" data-act="editVendor" data-k="'+x.id+'">Edit</button>':'')+(can('deactivate')?'<button class="btn sm" data-act="toggleVendor" data-k="'+x.id+'">'+(x.active?'Deactivate':'Activate')+'</button>':'')+'</div></td>':'')+'</tr>').join('')+'</tbody></table></div>',true,(f||!can('vendors'))?'':'<button class="btn sm pri" data-act="form" data-k="vendor">'+ico('plus',15)+'Register vendor</button>');
   return h}
 function admDrivers(u){const f=S.form==='driver',ed=f&&S.editId?DB.drivers.find(x=>x.id===S.editId):null,v=k=>ed?esc(ed[k]||''):'';let h='';
   if(f)h+=panel(ed?'Edit driver · '+esc(ed.name):'Register driver','','<form id="fd" class="f"><label>Full name<input id="fd-name" required value="'+v('name')+'"></label><label>Vendor<select id="fd-vendor">'+DB.vendors.filter(x=>x.active||(ed&&ed.vendor===x.id)).map(x=>'<option value="'+x.id+'"'+(ed&&ed.vendor===x.id?' selected':'')+'>'+esc(x.name)+'</option>').join('')+'</select></label><label>Mobile number<input id="fd-phone" required placeholder="+60 12-345 6789" value="'+v('phone')+'"></label><label>Vehicle<select id="fd-veh">'+['Van','Motorcycle','Lorry 1-tonne','Car'].map(x=>'<option'+(ed&&ed.vehicle===x?' selected':'')+'>'+x+'</option>').join('')+'</select></label><label>Plate number<input id="fd-plate" required placeholder="WXA 1234" value="'+v('plate')+'"></label>'
@@ -1574,7 +1576,7 @@ const PERMS=[['Pages'],['dash','Dashboards: executive overview, HWS operations, 
   ['Workflow'],['create','Create requests'],['validate','Validate request and select vendor'],['assign','Assign driver and collection slot'],['collect','Collect and deliver with proof'],['acceptHws','Accept or reject delivery at HWS-received bases (e.g. Mapletree Warehouse); elsewhere the receiver\'s signature completes the job'],['vconfirm','Confirm completion (vendor step, older jobs only)'],['close','Re-dispatch rejected jobs and complete older jobs'],['verify','Mark proof verified'],['escalate','Escalate to vendor'],['undo','Undo workflow steps and delete requests'],
   ['Administration'],['users','Register and edit users'],['bases','Register and edit bases'],['vendors','Register and edit vendors and drivers'],['rates','Route rates, formula rates, surcharges and SLA targets'],['deactivate','Deactivate and activate accounts and vendors'],['delete','Delete users, bases and route rates; reset passwords'],['notif','Notification channels']];
 function admPerm(){const u=me(),ed=u.role==='admin',R6=Object.keys(ROLE);
-  const body='<div class="tw"><table class="t mat"><thead><tr><th>Capability</th>'+R6.map(r=>'<th>'+ROLE[r]+'</th>').join('')+'</tr></thead><tbody>'+PERMS.map(p=>p.length===1?'<tr><td colspan="7" style="background:var(--panel2);font-weight:600;font-size:12px;color:var(--muted)">'+p[0]+'</td></tr>':'<tr><td>'+p[1]+'</td>'+R6.map(r=>'<td><input type="checkbox" data-perm="'+p[0]+'" data-role="'+r+'"'+(can(p[0],{role:r})?' checked':'')+(ed?'':' disabled')+' aria-label="'+esc(p[1]+' · '+ROLE[r])+'"></td>').join('')+'</tr>').join('')
+  const body='<div class="tw"><table class="t mat"><thead><tr><th>Capability</th>'+R6.map(r=>'<th>'+ROLE[r]+'</th>').join('')+'</tr></thead><tbody>'+PERMS.map(p=>p.length===1?'<tr><td colspan="'+(R6.length+1)+'" style="background:var(--panel2);font-weight:600;font-size:12px;color:var(--muted)">'+p[0]+'</td></tr>':'<tr><td>'+p[1]+'</td>'+R6.map(r=>'<td><input type="checkbox" data-perm="'+p[0]+'" data-role="'+r+'"'+(can(p[0],{role:r})?' checked':'')+(ed?'':' disabled')+' aria-label="'+esc(p[1]+' · '+ROLE[r])+'"></td>').join('')+'</tr>').join('')
     +'<tr><td>Change role permissions</td>'+R6.map(r=>'<td>'+(r==='admin'?'<span class="yes" title="Always the Administrator">✓</span>':'<span class="no">—</span>')+'</td>').join('')+'</tr></tbody></table></div>';
   return panel('Role permissions',ed?'tick or untick, saved straight away':'set by the Administrator',body+'<div style="padding:12px 16px;display:grid;gap:8px"><p class="hint" style="margin:0">Changes apply to everyone with that role within a few seconds. Which requests a person sees still follows their role: vendors see their own jobs, drivers the jobs assigned to them, and regional users their store\'s requests.</p>'+(ed?'<div><button class="btn sm" data-act="permReset">Reset to defaults</button></div>':'')+'</div>',true)+'<div style="height:14px"></div>'+panel('Security','',pt(['Control','Status'],[['Role-based access, enforced by the server, with row scoping by vendor, driver and requestor','Working'],['Audit log of sign-ins, registrations, deletions, rate changes and job actions','Working'],['Passwords hashed with scrypt; sessions in HttpOnly cookies; sign-in throttling','Working'],['Proof photos, signatures and attachments only served to signed-in users','Working'],['Encryption in transit (HTTPS)','Provided by your host'],['Microsoft Entra ID single sign-on','Not set up']]),true)+''}
 function admBackup(u){if(u.role!=='admin')return panel('Backup','','<p class="hint" style="margin:0">Only the Administrator can back up or restore data.</p>');
@@ -1588,19 +1590,19 @@ const JT={new:'New jobs',cur:'Current jobs',done:'Completed jobs'};
 const JHINT={hws:{new:'Waiting for HWS to validate',cur:'With a vendor, on the road or awaiting HWS acceptance',done:'Completed'},vendor:{new:'Assign a driver',cur:'On the road',done:'Completed or rejected'},driver:{new:'Collect from the warehouse',cur:'Collected or on the way',done:'Delivered'},user:{new:'Submitted, waiting for a driver',cur:'Assigned or on the way',done:'Received and signed'}};
 function jobStage(r,u){const s=statusOf(r);
   if(isHWS(u))return s==='Request Created'?'new':s==='Completed'?'done':'cur';
-  if(u.role==='vendor')return s==='Pending Vendor Assignment'?'new':(s==='Completed'||s==='Rejected'||(s==='Accepted'&&r.t.vconfirm))?'done':'cur';
+  if(isV(u))return s==='Pending Vendor Assignment'?'new':(s==='Completed'||s==='Rejected'||(s==='Accepted'&&r.t.vconfirm))?'done':'cur';
   if(u.role==='driver')return s==='Driver Assigned'?'new':ACTIVE.includes(s)?'cur':'done';
   return['Request Created','Pending Vendor Assignment'].includes(s)?'new':['Accepted','Completed','Rejected'].includes(s)?'done':'cur'}
 const lastTs=r=>Math.max(...EV.map(k=>r.t[k]||0));
 function jobCard(r){const st=statusOf(r),pts=st==='Driver Assigned'?colsOf(r):destsOf(r),tgt=pts[pts.length-1],way=pts.length>1?'&waypoints='+pts.slice(0,-1).map(b=>b.lat+','+b.lng).join('%7C'):'',go={'Driver Assigned':'Collect','Collected from Warehouse':'Start delivery','In Transit':'Deliver'}[st];
   return'<div class="jc"><div class="row" style="justify-content:space-between"><span><span class="mono">'+r.no+'</span>'+(r.ref?'<span class="hint"> · Req No. '+esc(r.ref)+'</span>':'')+'</span>'+pill(st)+'</div><div><b>'+esc(r.item)+' × '+r.qty+'</b>'+(r.prio!=='Standard'?' <span class="tag acc">'+r.prio+'</span>':'')+'<div class="hint">'+(st==='Driver Assigned'?'Collect at ':'Deliver to ')+pts.map((b,i)=>(pts.length>1?(i+1)+'. ':'')+esc(b.name)+'<br>'+esc(b.address)).join('<br>')+'</div></div><div class="row" style="justify-content:space-between"><span class="hint">Collection slot '+fdt(r.sched)+'</span>'+slaPill(r)+'</div><div class="row">'+(go?'<button class="btn pri" data-act="open" data-id="'+r.id+'">'+go+'</button><a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination='+tgt.lat+','+tgt.lng+way+'">Navigate</a>':'<button class="btn sm" data-act="open" data-id="'+r.id+'">View details and proof</button>')+'</div></div>'}
-function jobBoard(rs){const u=me(),hk=isHWS(u)?'hws':u.role,g={new:[],cur:[],done:[]};rs.forEach(r=>g[jobStage(r,u)].push(r));
+function jobBoard(rs){const u=me(),hk=isHWS(u)?'hws':isV(u)?'vendor':u.role,g={new:[],cur:[],done:[]};rs.forEach(r=>g[jobStage(r,u)].push(r));
   if(!g[S.jt])S.jt='new';const lim=S.jlim||10;
   g.new.sort((a,b)=>a.t.created-b.t.created);g.cur.sort((a,b)=>lastTs(b)-lastTs(a));g.done.sort((a,b)=>lastTs(b)-lastTs(a));
-  const a=g[S.jt],cards=u.role==='driver',who=r=>u.role==='vendor'||u.role==='driver'?(r.driver&&DR(r.driver)?DR(r.driver).name:'No driver yet'):(r.vendor?V(r.vendor).name:'No vendor yet');
+  const a=g[S.jt],cards=u.role==='driver',who=r=>isV(u)||u.role==='driver'?(r.driver&&DR(r.driver)?DR(r.driver).name:'No driver yet'):(r.vendor?V(r.vendor).name:'No vendor yet');
   const empty={new:'No new jobs right now.',cur:'No job in progress.',done:'No completed jobs yet.'}[S.jt];
   const body=!a.length?'<div class="empty">'+empty+'</div>':cards?'<div class="jobs">'+a.slice(0,lim).map(jobCard).join('')+'</div>'
-    :'<div class="tw"><table class="t"><thead><tr><th>Request</th><th>Route</th><th>Status</th><th class="hide-m">'+(u.role==='vendor'?'Driver':'Vendor')+'</th><th class="hide-m">Last update</th><th>SLA</th></tr></thead><tbody>'+a.slice(0,lim).map(r=>'<tr class="rw" data-act="open" data-id="'+r.id+'"><td><span class="mono">'+r.no+'</span>'+refH(r)+'<div class="hint">'+esc(r.item)+' × '+r.qty+'</div></td><td>'+esc(toLbl(r))+'<div class="hint">from '+esc(fromLbl(r))+'</div></td><td>'+pill(statusOf(r))+'</td><td class="hide-m">'+esc(who(r))+'</td><td class="hide-m">'+fdt(lastTs(r))+'</td><td>'+slaPill(r)+'</td></tr>').join('')+'</tbody></table></div>';
+    :'<div class="tw"><table class="t"><thead><tr><th>Request</th><th>Route</th><th>Status</th><th class="hide-m">'+(isV(u)?'Driver':'Vendor')+'</th><th class="hide-m">Last update</th><th>SLA</th></tr></thead><tbody>'+a.slice(0,lim).map(r=>'<tr class="rw" data-act="open" data-id="'+r.id+'"><td><span class="mono">'+r.no+'</span>'+refH(r)+'<div class="hint">'+esc(r.item)+' × '+r.qty+'</div></td><td>'+esc(toLbl(r))+'<div class="hint">from '+esc(fromLbl(r))+'</div></td><td>'+pill(statusOf(r))+'</td><td class="hide-m">'+esc(who(r))+'</td><td class="hide-m">'+fdt(lastTs(r))+'</td><td>'+slaPill(r)+'</td></tr>').join('')+'</tbody></table></div>';
   return'<section class="panel" style="margin-bottom:14px"><div class="hd"><h2>My jobs</h2><span>live · tap a job to act on it</span></div><div class="jtabs" role="tablist">'+Object.keys(JT).map(k=>'<button role="tab" data-act="jt" data-k="'+k+'" aria-selected="'+(S.jt===k)+'"><span class="jl">'+JT[k]+'</span><span class="jn">'+g[k].length+'</span><span class="jh">'+JHINT[hk][k]+'</span></button>').join('')+'</div><div class="jb">'+body+(a.length>lim?'<div style="margin-top:10px"><button class="btn sm" data-act="jmore">Show 10 more ('+(a.length-lim)+' left)</button></div>':'')+'</div></section>'}
 
 /* ---------- driver & regional user ---------- */
@@ -1623,8 +1625,8 @@ function NAV(){const u=me();if(!u)return[];const c=k=>can(k,u),out=[];
   const grp=(name,items)=>{const it=items.filter(x=>x[3]);if(it.length)out.push([name],...it.map(x=>x.slice(0,3)))};
   if(u.role==='driver')grp('Driver',[['jobs','My jobs','truck',1]]);
   if(u.role==='user')grp('My requests',[['mine','My dashboard','dash',1]]);
-  grp(u.role==='vendor'?'Vendor portal':'Dashboards',[['vendor',u.role==='vendor'?'Performance':'Vendor performance','vend',u.role==='vendor'&&c('vendorDash')],['overview','Executive overview','dash',c('dash')],['ops','HWS operations','ops',c('dash')],['map','State map','map',c('dash')],['cost','Costing','cost',c('cost')],['vendor','Vendor performance','vend',u.role!=='vendor'&&c('vendorDash')]]);
-  grp('Operations',[['requests',u.role==='vendor'?'Jobs':u.role==='driver'?'Job history':u.role==='user'?'Request list':'Requests','list',1],['new','New request','plus',c('create')],['sla','SLA management','clock',c('sla')],['proofs','Proof documents','file',c('proofs')],['drivers','Drivers','truck',c('vendorDash')||c('vendors')]]);
+  grp(isV(u)?'Vendor portal':'Dashboards',[['vendor',isV(u)?'Performance':'Vendor performance','vend',isV(u)&&c('vendorDash')],['overview','Executive overview','dash',c('dash')],['ops','HWS operations','ops',c('dash')],['map','State map','map',c('dash')],['cost','Costing','cost',c('cost')],['vendor','Vendor performance','vend',!isV(u)&&c('vendorDash')]]);
+  grp('Operations',[['requests',isV(u)?'Jobs':u.role==='driver'?'Job history':u.role==='user'?'Request list':'Requests','list',1],['new','New request','plus',c('create')],['sla','SLA management','clock',c('sla')],['proofs','Proof documents','file',c('proofs')],['drivers','Drivers','truck',c('vendorDash')||c('vendors')]]);
   grp('Reports',[['reports','Reports','chart',c('reports')]]);
   grp('Administration',[['admin','Users, bases, rates','users',admTabs(u).length>0],['audit','Audit trail','shield',c('audit')]]);
   return out}
@@ -1657,7 +1659,7 @@ function renderMain(){if(!allowed(S.view))S.view=home();
   const fdd=$('#fd');if(fdd)fdd.addEventListener('submit',submitDriver);
   const fb=$('#fb');if(fb)fb.addEventListener('submit',submitBase);
   const frr=$('#fr');if(frr){frr.addEventListener('submit',submitRoute);frHint()}}
-function syncUserForm(){const r=$('#fu-role').value,ed=S.editId?DB.users.find(x=>x.id===S.editId):null;$('#fu-vw').hidden=!['vendor','driver'].includes(r);$('#fu-dw').hidden=r!=='driver';$('#fu-bw').firstChild.textContent=r==='user'?'Store (required)':'Base (optional)';
+function syncUserForm(){const r=$('#fu-role').value,ed=S.editId?DB.users.find(x=>x.id===S.editId):null;$('#fu-vw').hidden=!['vendor','vendorco','driver'].includes(r);$('#fu-dw').hidden=r!=='driver';$('#fu-bw').firstChild.textContent=r==='user'?'Store (required)':'Base (optional)';
   if(r==='driver'){const v=$('#fu-vendor').value;const free=DB.drivers.filter(d=>d.vendor===v&&(!DB.users.some(x=>x.driver===d.id)||(ed&&ed.driver===d.id)));$('#fu-driver').innerHTML=free.length?free.map(d=>'<option value="'+d.id+'"'+(ed&&ed.driver===d.id?' selected':'')+'>'+esc(d.name)+'</option>').join(''):'<option value="">None without a login. Register under Drivers.</option>'}}
 function renderBadge(){const n=notifFor().filter(x=>!x.read).length;const b=$('#badge');if(b){b.hidden=!n;b.textContent=n>99?'99+':n}}
 function renderPop(){const l=$('#pop');if(!l)return;if(S.pop!=='acct')S.pwForm=false;if(!S.pop){l.hidden=true;return}l.hidden=false;const u=me();
@@ -1805,10 +1807,10 @@ function submitUser(e){e.preventDefault();const g=id=>$(id).value.trim();const r
   if(!phone){er.textContent='Enter a mobile phone number.';return}if(role==='user'&&!base){er.textContent='Choose the store for a regional user.';return}
   const ed=S.editId?DB.users.find(y=>y.id===S.editId):null;
   const x={id:ed?ed.id:uid('U'),username:un,name,role,pw:ed?undefined:(g('#fu-pw')||'welcome123'),email:g('#fu-email'),phone,address:g('#fu-addr')||(base?B(base).address:''),base,active:true};
-  if((role==='vendor'||role==='driver')&&!g('#fu-vendor')){er.textContent='Register the vendor first, under the Vendors tab.';return}
-  if(role==='vendor')x.vendor=g('#fu-vendor');if(role==='driver'){x.vendor=g('#fu-vendor');x.driver=g('#fu-driver');if(!x.driver){er.textContent='Register the driver first, under the Drivers tab.';return}}
+  if(['vendor','vendorco','driver'].includes(role)&&!g('#fu-vendor')){er.textContent='Register the vendor first, under the Vendors tab.';return}
+  if(role==='vendor'||role==='vendorco')x.vendor=g('#fu-vendor');if(role==='driver'){x.vendor=g('#fu-vendor');x.driver=g('#fu-driver');if(!x.driver){er.textContent='Register the driver first, under the Drivers tab.';return}}
   if(ed){delete x.pw;x.active=ed.active;Object.keys(ed).forEach(k=>{if(!(k in x)&&!['vendor','driver'].includes(k))x[k]=ed[k]});DB.users[DB.users.indexOf(ed)]=x;audit('User updated',name+' ('+ROLE[role]+')');save();S.form=null;S.editId=null;toast('Saved '+name);renderMain();return}
-  DB.users.push(x);audit('User registered',name+' ('+ROLE[role]+')');save();S.form=null;toast('Registered '+name+'. Username: '+un);renderMain()}
+  DB.users.push(x);audit('User registered',name+' ('+ROLE[role]+')');save();S.form=null;S.prefill=null;toast('Registered '+name+'. Username: '+un);renderMain()}
 function submitBase(e){e.preventDefault();const g=id=>$(id).value.trim(),er=$('#fb-err');const name=g('#fb-name'),addr=g('#fb-addr'),st=g('#fb-state');if(!name||!addr){er.textContent='Enter a name and an address.';return}
   let lat,lng;const ll=g('#fb-ll');if(ll){const m=ll.match(/(-?\d+(?:\.\d+)?)\s*[,\s]\s*(-?\d+(?:\.\d+)?)/);if(!m){er.textContent='Coordinates should look like 3.0738, 101.5183.';return}lat=+m[1];lng=+m[2];if(lat<0.5||lat>7.6||lng<99.5||lng>119.5){er.textContent='Those coordinates are outside Malaysia.';return}}else{const s=ST(st);lat=s.lat;lng=s.lng}
   const ed=S.editId?DB.bases.find(b=>b.id===S.editId):null;
@@ -1955,7 +1957,8 @@ document.addEventListener('click',e=>{const ln=e.target.closest('a[href^="#/"]')
   else if(a==='stateReq'){resetF();S.f.state=t.dataset.k;S.view='requests';renderNav();renderMain();window.scrollTo(0,0)}
   else if(a==='rep'){S.rep=t.dataset.k;syncHash(true);renderMain()}
   else if(a==='adm'){S.adm=t.dataset.k;S.form=null;syncHash(true);renderMain()}
-  else if(a==='form'){S.form=t.dataset.k||null;S.editId=null;renderMain()}
+  else if(a==='form'){S.form=t.dataset.k||null;S.editId=null;S.prefill=null;renderMain()}
+  else if(a==='addPic'){S.view='admin';S.adm='users';S.form='user';S.editId=null;S.prefill={role:'vendorco',vendor:t.dataset.k};syncHash(true);renderNav();renderMain();window.scrollTo(0,0)}
   else if(['editUser','editBase','editVendor','editDriver','editRoute'].includes(a)){S.form={editUser:'user',editBase:'base',editVendor:'vendor',editDriver:'driver',editRoute:'route'}[a];S.editId=t.dataset.k;renderMain();window.scrollTo(0,0)}
   else if(a==='mailtest')mailTest();
   else if(a==='permReset'){if(me().role!=='admin')return;if(!t.dataset.sure){t.dataset.sure='1';t.textContent='Select again to reset';return}DB.perms=JSON.parse(JSON.stringify(DB.permDefaults));audit('Role permissions reset to defaults','');save();toast('Permissions reset to defaults');renderNav();renderMain()}
