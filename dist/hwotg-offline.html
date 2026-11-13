@@ -1409,7 +1409,8 @@ function viewRequests(){const u=me(),a=filtered(),f=S.f,proofs=S.view==='proofs'
   a.slice(0,S.lim).forEach(r=>{const c=showCost?costView(r):null;h+='<tr class="rw" data-act="open" data-id="'+r.id+'"><td><span class="mono">'+r.no+'</span>'+refH(r)+''+(r.prio!=='Standard'?'<div><span class="tag'+(r.prio==='Critical'?' acc':'')+'">'+r.prio+'</span></div>':'')+(isWe(r)?'<div><span class="tag">'+esc(r.day)+'</span></div>':'')+'</td><td>'+esc(toLbl(r))+'<div class="hint">from '+esc(fromLbl(r))+'</div></td><td class="hide-m">'+esc(r.item)+' × '+r.qty+'</td><td>'+pill(statusOf(r))+(r.escalated?' <span class="sla red">Escalated</span>':'')+'</td>'+(proofs?'<td>'+(r.proof.collection?'Yes':'—')+'</td><td>'+(r.proof.delivery?'Yes':'—')+(r.gpsFlag?' <span class="sla amber">GPS check</span>':'')+'</td><td>'+(r.verified?'Verified':'Pending')+'</td>':'<td class="hide-m">'+esc(r.vendor?V(r.vendor).name:'—')+'</td><td class="hide-m">'+esc(r.driver&&DR(r.driver)?DR(r.driver).name:'—')+'</td><td class="hide-m">'+fdt(r.t.created)+'</td>'+(showCost?'<td class="num hide-m">'+(c?rm(c.total):'—')+'</td>':''))+'<td>'+slaPill(r)+'</td></tr>'});
   h+='</tbody></table></div></div>';if(a.length>S.lim)h+='<p><button class="btn" data-act="more">Show 25 more ('+(a.length-S.lim)+' left)</button></p>';return h}
 function viewNew(){const u=me();const bs=DB.bases.filter(b=>b.active!==false);
-  const rqs=u.role==='user'?[u]:DB.users.filter(x=>x.role==='user'&&x.active).sort((a,b)=>a.name.localeCompare(b.name));
+  // Requestors: regional users first, then HWS staff (HWS Staff, Managers and the Administrator can also be requestors).
+  const rqs=u.role==='user'?[u]:DB.users.filter(x=>(x.role==='user'||isHWS(x))&&x.active).sort((a,b)=>(isHWS(a)-isHWS(b))||a.name.localeCompare(b.name));
   const pics=DB.users.filter(x=>isHWS(x)&&x.active);
   if(!S.nr||!S.nr.files||!rqs.some(x=>x.id===S.nr.rq))S.nr={rq:rqs[0]?rqs[0].id:'',from:'B00',to:(rqs[0]&&rqs[0].base)||'',pic:isHWS(u)?u.id:((pics.find(x=>x.role==='hws')||pics[0]||{}).id||''),files:{pickup:[],drop:[]}};
   const n=S.nr,bo=v=>bs.map(b=>'<option value="'+b.id+'"'+(b.id===v?' selected':'')+'>'+esc(b.name)+' · '+b.type+'</option>').join('');
@@ -1423,7 +1424,7 @@ function viewNew(){const u=me();const bs=DB.bases.filter(b=>b.active!==false);
    +'<label id="nf-to2w"'+(n.type==='12'?'':' hidden')+'>2b. Second destination<select id="nf-to2" data-nr="to2"><option value="">Choose…</option>'+bo(n.to2)+'</select></label>'
    +'<div id="nr-route" class="wide"></div></div></section>'
    +'<section class="panel"><div class="hd"><h2>People</h2><span>contact details fill in from the user profile</span></div><div class="bd f">'
-   +'<label>3. Requestor'+(u.role==='user'?'<input value="'+esc(u.name)+'" readonly>':'<select id="nf-rq" data-nr="rq">'+rqs.map(x=>'<option value="'+x.id+'"'+(x.id===n.rq?' selected':'')+'>'+esc(x.name)+' · '+esc(x.base?B(x.base).name:'no base')+'</option>').join('')+'</select>')+'</label>'
+   +'<label>3. Requestor'+(u.role==='user'?'<input value="'+esc(u.name)+'" readonly>':'<select id="nf-rq" data-nr="rq">'+[['Regional users',rqs.filter(x=>!isHWS(x))],['HWS staff',rqs.filter(isHWS)]].filter(g=>g[1].length).map(g=>'<optgroup label="'+g[0]+'">'+g[1].map(x=>'<option value="'+x.id+'"'+(x.id===n.rq?' selected':'')+'>'+esc(x.name)+' · '+(isHWS(x)?ROLE[x.role]+' · ':'')+esc(x.base?B(x.base).name:'no base')+'</option>').join('')+'</optgroup>').join('')+'</select>')+'</label>'
    +'<label>4. HWS PIC<select id="nf-pic" data-nr="pic">'+pics.map(x=>'<option value="'+x.id+'"'+(x.id===n.pic?' selected':'')+'>'+esc(x.name)+' · '+ROLE[x.role]+'</option>').join('')+'</select></label>'
    +'<div id="nr-rq" class="wide"></div></div></section>'
    +'<section class="panel"><div class="hd"><h2>Job</h2></div><div class="bd f">'
@@ -1445,7 +1446,7 @@ function miniMap(pts,many){const P=pts.map(p=>({q:prj(p.b.lng,p.b.lat),c:p.c,n:p
   return'<svg class="mini" viewBox="'+(cx-w/2).toFixed(0)+' '+(cy-h/2).toFixed(0)+' '+w.toFixed(0)+' '+h.toFixed(0)+'" role="img" aria-label="Map: '+esc(P.slice(0,4).map(p=>p.n).join(', '))+'">'+g+'</svg>'+(P.length>=2&&!many?'<div class="legend" style="margin-top:4px"><span><span class="sw" style="background:var(--c2)"></span>Collection point</span><span><span class="sw" style="background:var(--bad)"></span>Destination</span></div>':'')}
 function nrSync(k){const g=id=>{const e=$(id);return e?e.value:''};const n=S.nr,u=me();if(!n||!$('#nf'))return;
   n.ref=g('#nf-ref');n.from=g('#nf-from');n.pic=g('#nf-pic');n.rq=u.role==='user'?u.id:g('#nf-rq');
-  if(k==='rq'){const ru=DB.users.find(x=>x.id===n.rq);if(ru&&ru.base&&$('#nf-to'))$('#nf-to').value=ru.base}
+  if(k==='rq'){const ru=DB.users.find(x=>x.id===n.rq);if(ru&&ru.base&&ru.base!==n.from&&$('#nf-to'))$('#nf-to').value=ru.base}
   n.to=g('#nf-to');n.type=g('#nf-type')||'11';
   const w1=$('#nf-from2w'),w2=$('#nf-to2w');if(w1)w1.hidden=n.type!=='21';if(w2)w2.hidden=n.type!=='12';
   n.from2=n.type==='21'?g('#nf-from2'):'';n.to2=n.type==='12'?g('#nf-to2'):'';
@@ -1454,7 +1455,7 @@ function nrSync(k){const g=id=>{const e=$(id);return e?e.value:''};const n=S.nr,
   const re=$('#nr-route');if(re){let h='<div class="pair">'+ids.map((id,i)=>baseCard(lbls[i]||'Stop',B(id))).join('')+'</div><div class="row" style="margin-top:10px">'+(need?'<span class="err">Choose the second '+(n.type==='21'?'collection point':'destination')+'.</span>':same?'<span class="err">Each collection point and destination must be a different place.</span>':'<span class="tag acc">'+routeLbl(R0)+'</span>');
     if(can('cost')&&!same&&!need){const regs=[...new Set([n.to,n.to2].filter(Boolean).map(x=>ST(B(x).state).region))];const est=DB.vendors.filter(v=>v.active&&regs.every(g2=>v.coverage.includes(g2))).map(v=>({v,c:costOf(Object.assign({vendor:v.id,st:T.state,prio:g('#nf-prio')||'Standard',day:g('#nf-day')||'Weekday',redisp:0,t:{}},R0))}));h+=est.length?est.map(e=>'<span class="tag">'+esc(e.v.name)+': '+rm(e.c.total)+' ('+e.c.basis.toLowerCase()+(e.c.stop?' + extra stop':'')+')</span>').join(''):'<span class="tag">No vendor covers '+regs.join(' and ')+'</span>'}
     h+='</div>';if(!same&&!need)h+='<div style="margin-top:10px">'+miniMap(ids.map((id,i)=>({b:B(id),c:i<nc?'from':'to'})))+'</div>';re.innerHTML=h}
-  const rq=$('#nr-rq');if(rq)rq.innerHTML=ru?contactCard(ru):'<p class="hint">No regional user is registered yet. Add one under Users, bases, rates.</p>'}
+  const rq=$('#nr-rq');if(rq)rq.innerHTML=ru?contactCard(ru):'<p class="hint">No requestor is registered yet. Add a regional user or HWS staff under Users, bases, rates.</p>'}
 const MAXB=8*1024*1024;
 const fsz=b=>b>=1048576?(b/1048576).toFixed(1)+' MB':Math.max(1,Math.round(b/1024))+' KB';
 const fileIco=f=>/^image\//.test(f.type)?'<img src="'+f.data+'" alt="" class="fi">':'<span class="fi ft">'+esc((f.name.split('.').pop()||'file').toUpperCase().slice(0,4))+'</span>';
